@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import shlex
 import sys
 from collections.abc import Sequence
 from importlib.resources import as_file, files
@@ -14,7 +16,7 @@ from jsonschema.exceptions import SchemaError, ValidationError
 
 from model_drift import __version__
 from model_drift.compare import compare_manifests
-from model_drift.extract import inspect_slx_package
+from model_drift.extract import ExternalCommandExtractor, inspect_slx_package
 from model_drift.reporters import render_markdown, render_sarif, render_svg
 from model_drift.rules import RuleConfigError, evaluate_rules, load_rules
 from model_drift.serialization import (
@@ -58,6 +60,27 @@ def _parser() -> argparse.ArgumentParser:
         help="return a policy failure exit code at or above this level",
     )
 
+    analyze = commands.add_parser(
+        "analyze",
+        help="orchestrate extraction and comparison from canonical manifests or .slx inputs",
+    )
+    analyze.add_argument("--base", type=Path, required=True)
+    analyze.add_argument("--target", type=Path, required=True)
+    analyze.add_argument("--rules", type=Path, default=None)
+    analyze.add_argument("--output", type=Path, required=True)
+    analyze.add_argument(
+        "--fail-on",
+        choices=("none", "warning", "error"),
+        default="error",
+        help="return a policy failure exit code at or above this level",
+    )
+    analyze.add_argument(
+        "--extractor-command",
+        type=str,
+        default=None,
+        help="Command used to emit a canonical manifest JSON for each .slx input; use {artifact}.",
+    )
+
     inspect = commands.add_parser(
         "inspect-slx",
         help="emit bounded ZIP/OPC diagnostics without claiming semantic extraction",
@@ -94,6 +117,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 print(text, end="")
             return 0 if result.status.value == "complete" else 1
 
+        if args.command == "analyze":
+            return _analyze(args)
+
         return _compare(args)
     except (CliError, OSError, json.JSONDecodeError, RuleConfigError) as exc:
         print(f"simulink-model-drift: error: {exc}", file=sys.stderr)
@@ -105,32 +131,49 @@ def _compare(args: argparse.Namespace) -> int:
     target = _load_json(args.target)
     _validate_contract(base, "canonical", args.base)
     _validate_contract(target, "canonical", args.target)
+    return _emit_reports(base, target, args.rules, args.output, args.fail_on)
 
-    rules = load_rules(args.rules)
+
+def _analyze(args: argparse.Namespace) -> int:
+    base_path = args.base
+    target_path = args.target
+    command = args.extractor_command or os.environ.get("SIMULINK_DIFF_COMMAND")
+    if not _looks_like_manifest(base_path) or not _looks_like_manifest(target_path):
+        if not command:
+            raise CliError(
+                "Analyze requires canonical JSON inputs or an extractor command via "
+                "--extractor-command / SIMULINK_DIFF_COMMAND for .slx inputs."
+            )
+        base_manifest = _extract_manifest(base_path, command)
+        target_manifest = _extract_manifest(target_path, command)
+    else:
+        base_manifest = _load_json(base_path)
+        target_manifest = _load_json(target_path)
+    _validate_contract(base_manifest, "canonical", base_path)
+    _validate_contract(target_manifest, "canonical", target_path)
+    return _emit_reports(base_manifest, target_manifest, args.rules, args.output, args.fail_on)
+
+
+def _emit_reports(
+    base: object,
+    target: object,
+    rules_path: Path | None,
+    output_dir: Path,
+    fail_on: str,
+) -> int:
+    rules = load_rules(rules_path if rules_path is not None else _default_rules_path())
     drift = compare_manifests(base, target)
     drift_document = to_json_value(drift)
     _validate_contract(drift_document, "drift", Path("generated drift manifest"))
     findings = evaluate_rules(drift_document, rules)
 
-    args.output.mkdir(parents=True, exist_ok=True)
-    _write_text(
-        args.output / "model-drift.json",
-        canonical_json_text(drift_document),
-    )
-    _write_text(
-        args.output / "model-drift.md",
-        render_markdown(drift_document, findings),
-    )
-    _write_text(
-        args.output / "model-drift.sarif",
-        render_sarif(findings, rules, tool_version=__version__),
-    )
-    _write_text(
-        args.output / "model-drift.svg",
-        render_svg(drift_document, findings),
-    )
+    output_dir.mkdir(parents=True, exist_ok=True)
+    _write_text(output_dir / "model-drift.json", canonical_json_text(drift_document))
+    _write_text(output_dir / "model-drift.md", render_markdown(drift_document, findings))
+    _write_text(output_dir / "model-drift.sarif", render_sarif(findings, rules, tool_version=__version__))
+    _write_text(output_dir / "model-drift.svg", render_svg(drift_document, findings))
 
-    if _policy_failed(findings, args.fail_on):
+    if _policy_failed(findings, fail_on):
         return 3
     if drift.comparison.status.value != "complete":
         return 4
@@ -142,6 +185,37 @@ def _schema_filename(contract: str) -> str:
         "canonical": "canonical-model.schema.json",
         "drift": "drift-manifest.schema.json",
     }[contract]
+
+
+def _default_rules_path() -> Path:
+    repo_root = Path(__file__).resolve().parents[2]
+    default = repo_root / "model-drift" / "rules" / "default-rules.yml"
+    if default.exists():
+        return default
+    return repo_root / "examples" / "rules" / "default-rules.yml"
+
+
+def _looks_like_manifest(path: Path) -> bool:
+    suffix = path.suffix.lower()
+    return suffix == ".json"
+
+
+def _extract_manifest(artifact: Path, command_text: str) -> object:
+    splitter = shlex.shlex(command_text, posix=True)
+    splitter.whitespace_split = True
+    splitter.commenters = "#"
+    command = list(splitter)
+    if not command:
+        raise CliError("Extractor command is empty.")
+    extractor = ExternalCommandExtractor(tuple(command))
+    result = extractor.extract(artifact)
+    if result.status.value != "complete":
+        raise CliError(
+            f"Extractor failed for {artifact.as_posix()}: {result.error or result.status.value}"
+        )
+    if result.manifest is None:
+        raise CliError(f"Extractor produced no manifest for {artifact.as_posix()}.")
+    return result.manifest
 
 
 def _load_json(path: Path) -> object:

@@ -102,6 +102,56 @@ def test_compare_cli_emits_valid_deterministic_reports_and_visual_evidence() -> 
         assert "<svg" in (first / "model-drift.svg").read_text(encoding="utf-8")
 
 
+def test_analyze_cli_extracts_slx_inputs_and_emits_reports() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        base_artifact = root / "base.slx"
+        target_artifact = root / "target.slx"
+        base_artifact.write_bytes(b"base-model")
+        target_artifact.write_bytes(b"target-model")
+        script = root / "extractor.py"
+        script.write_text(
+            "\n".join(
+                [
+                    "import hashlib",
+                    "import json",
+                    "import sys",
+                    "from pathlib import Path",
+                    f"fixtures = {{'base.slx': Path({str(BASE)!r}).read_text(encoding='utf-8'), 'target.slx': Path({str(TARGET)!r}).read_text(encoding='utf-8')}}",
+                    "artifact = Path(sys.argv[1])",
+                    "manifest = json.loads(fixtures[artifact.name])",
+                    "manifest['source']['artifact'] = artifact.name",
+                    "manifest['source']['artifactSha256'] = hashlib.sha256(artifact.read_bytes()).hexdigest()",
+                    "print(json.dumps(manifest))",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        out = root / "output"
+
+        assert main(
+            [
+                "analyze",
+                "--base",
+                str(base_artifact),
+                "--target",
+                str(target_artifact),
+                "--rules",
+                str(RULES),
+                "--output",
+                str(out),
+                "--fail-on",
+                "none",
+                "--extractor-command",
+                f"python {script.as_posix()} {{artifact}}",
+            ]
+        ) == 0
+        assert (out / "model-drift.json").exists()
+        assert (out / "model-drift.md").exists()
+        assert (out / "model-drift.sarif").exists()
+        assert (out / "model-drift.svg").exists()
+
+
 def test_compare_cli_rejects_invalid_canonical_contract(capsys: object) -> None:
     with tempfile.TemporaryDirectory() as directory:
         target = deepcopy(_json(TARGET))

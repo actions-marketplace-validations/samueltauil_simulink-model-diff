@@ -88,6 +88,20 @@ simulink-model-drift compare \
 
 The fixture intentionally contains an added Saturation block, a changed Gain, and a top-level input data-type change. `--fail-on none` keeps example generation successful even though the configured interface rule produces an error finding. Omit that option in enforcement workflows; the default is `--fail-on error`.
 
+For real engineering workflows, use the end-to-end analyzer to compare `.slx` files or canonical JSON directly:
+
+```bash
+SIMULINK_DIFF_COMMAND='python tools/extract_model.py {artifact}' \
+simulink-model-drift analyze \
+  --base models/controller-v1.slx \
+  --target models/controller-v2.slx \
+  --rules model-drift/rules/default-rules.yml \
+  --output build/model-drift \
+  --fail-on error
+```
+
+The command accepts either canonical JSON inputs or `.slx` artifacts. When `.slx` files are supplied, the extractor must emit a canonical manifest JSON object on stdout and report `analysis.status` explicitly. This is the production integration boundary for a supported MathWorks-backed implementation.
+
 Validate contracts, inspect a malformed or unsupported SLX package, print schema locations, or calculate a stable JSON fingerprint:
 
 ```bash
