@@ -1,7 +1,9 @@
 schemaVersion: "0.1.0"
 extractor:
-  strategy: simulink-api
+  strategy: external-command
+  command: "python tools/run_matlab_extractor.py {artifact}"
   failOnIncompleteAnalysis: true
+  timeoutSeconds: 300
 comparison:
   identityStrategy: normalized-path
   inferMoves: false
@@ -11,6 +13,7 @@ reporting:
     - json
     - markdown
     - sarif
+    - svg
 policy:
   rules:
     - model-drift/rules/default-rules.yml

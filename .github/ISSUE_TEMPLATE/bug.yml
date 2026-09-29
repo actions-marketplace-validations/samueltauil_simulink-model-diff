@@ -1,0 +1,49 @@
+name: Bug report
+description: Report reproducible incorrect behavior in the package, reports, or action.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Remove proprietary model content, credentials, and private runner details.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Package/action version or full commit SHA.
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command or action inputs
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and sanitized logs
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python, runner type, input type, and extractor/MATLAB releases if relevant.
+    validations:
+      required: true
+  - type: checkboxes
+    id: security
+    attributes:
+      label: Security check
+      options:
+        - label: This report does not disclose an unpatched vulnerability.
+          required: true

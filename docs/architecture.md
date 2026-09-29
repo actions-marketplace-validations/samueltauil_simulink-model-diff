@@ -4,6 +4,19 @@
 
 The analyzer should make Simulink changes reviewable without coupling its public contracts to undocumented SLX package internals. Its outputs must be deterministic, versioned, explicit about incomplete analysis, and useful outside GitHub.
 
+## Distribution boundary
+
+```mermaid
+flowchart LR
+    W[Caller workflow] --> A[Composite action]
+    A --> P[Released Python package]
+    P --> C[Public CLI]
+    C --> R[Deterministic reports]
+    W --> U[Artifact and SARIF upload]
+```
+
+The composite action is a thin distribution adapter. It installs the package from the action release and invokes the public CLI; it does not duplicate comparison or extraction logic. Caller workflows own checkout, permissions, event trust, report retention, and optional SARIF upload. This keeps GitHub integration reusable without making GitHub the semantic system of record.
+
 ```mermaid
 flowchart TD
     subgraph Extraction

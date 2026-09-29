@@ -1,0 +1,42 @@
+name: Extractor compatibility report
+description: Share evidence for a supported or unsupported MATLAB/Simulink configuration.
+title: "[Compatibility]: "
+labels:
+  - compatibility
+body:
+  - type: input
+    id: extractor
+    attributes:
+      label: Extractor and version
+    validations:
+      required: true
+  - type: input
+    id: releases
+    attributes:
+      label: Saved-model and runtime releases
+    validations:
+      required: true
+  - type: textarea
+    id: products
+    attributes:
+      label: Required MathWorks products
+    validations:
+      required: true
+  - type: dropdown
+    id: status
+    attributes:
+      label: Analysis status
+      options:
+        - complete
+        - partial
+        - unsupported
+        - failed
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Include determinism results, warnings, callback policy, and redistributable fixtures.
+    validations:
+      required: true

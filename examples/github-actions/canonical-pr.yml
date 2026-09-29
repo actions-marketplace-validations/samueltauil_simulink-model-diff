@@ -1,0 +1,75 @@
+name: Simulink model drift
+
+on:
+  pull_request:
+    paths:
+      - "**/*.model.json"
+      - "model-drift/rules/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Compare canonical manifests
+        id: drift
+        uses: YOUR-ORG/simulink-model-drift@v0.2.0
+        with:
+          base: examples/canonical/controller-base.model.json
+          target: examples/canonical/controller-target.model.json
+          rules: model-drift/rules/default-rules.yml
+          output-dir: build/model-drift
+          fail-on: error
+
+      - name: Add report to job summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f build/model-drift/model-drift.md ]]; then
+            cat build/model-drift/model-drift.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulink-model-drift-${{ github.run_id }}
+          path: build/model-drift/
+          if-no-files-found: error
+          retention-days: 14
+
+  upload-sarif:
+    if: >-
+      ${{
+        always() &&
+        (
+          github.event_name != 'pull_request' ||
+          github.event.pull_request.head.repo.full_name == github.repository
+        )
+      }}
+    needs: compare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Download reports
+        uses: actions/download-artifact@v4
+        with:
+          name: simulink-model-drift-${{ github.run_id }}
+          path: build/model-drift
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: build/model-drift/model-drift.sarif
+          category: simulink-model-drift

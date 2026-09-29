@@ -1,17 +1,17 @@
-name: Simulink model drift
+name: CI
 
 on:
   pull_request:
     paths:
-      - "**/*.slx"
+      - "action.yml"
       - "src/**"
       - "tests/**"
-      - "test/**"
       - "model-drift/**"
       - "examples/**"
-      - ".github/workflows/simulink-model-drift.yml"
+      - ".github/**"
       - "pyproject.toml"
-      - "requirements*.txt"
+      - "*.md"
+      - "docs/**"
   push:
     branches:
       - main
@@ -19,23 +19,16 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 concurrency:
   group: simulink-model-drift-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  analyze:
-    name: Test and analyze
+  validate:
+    name: Test package and action
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      OUTPUT_DIR: build/model-drift
-      PYTHONPATH: src
-      # Set this repository variable to the complete production analyzer command.
-      SIMULINK_DIFF_COMMAND: ${{ vars.SIMULINK_DIFF_COMMAND }}
-      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
 
     steps:
       - name: Check out repository
@@ -67,76 +60,30 @@ jobs:
           simulink-model-drift validate canonical \
             examples/canonical/controller-target.model.json
 
-      - name: Run analyzer
-        id: analyze
-        shell: bash
+      - name: Run composite action
+        uses: ./
+        with:
+          base: examples/canonical/controller-base.model.json
+          target: examples/canonical/controller-target.model.json
+          rules: examples/rules/default-rules.yml
+          output-dir: build/action-smoke
+          fail-on: none
+
+      - name: Verify action outputs
         run: |
-          set -euo pipefail
-          mkdir -p "$OUTPUT_DIR"
-
-          changed_models=""
-          if [[ -n "${BASE_SHA:-}" ]] &&
-             [[ "$BASE_SHA" != "0000000000000000000000000000000000000000" ]] &&
-             git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
-            changed_models="$(git diff --name-only "$BASE_SHA" "$GITHUB_SHA" -- '*.slx')"
-          elif git rev-parse HEAD^ >/dev/null 2>&1; then
-            changed_models="$(git diff --name-only HEAD^ HEAD -- '*.slx')"
-          fi
-
-          if [[ -n "$changed_models" && -z "${SIMULINK_DIFF_COMMAND:-}" ]]; then
-            {
-              echo "## Simulink Model Drift"
-              echo
-              echo "**Analysis:** Failed"
-              echo
-              echo "Changed models were detected, but the repository variable \`SIMULINK_DIFF_COMMAND\` is not configured."
-              echo
-              echo "The workflow will not claim that an unexamined model change is clean."
-              echo
-              echo '```text'
-              printf '%s\n' "$changed_models"
-              echo '```'
-            } | tee "$OUTPUT_DIR/model-drift.md"
-            exit 1
-          fi
-
-          if [[ -n "$changed_models" ]]; then
-            set +e
-            bash -c "$SIMULINK_DIFF_COMMAND"
-            analyzer_status=$?
-            set -e
-
-            for report in model-drift.json model-drift.md model-drift.sarif model-drift.svg; do
-              if [[ ! -s "$OUTPUT_DIR/$report" ]]; then
-                echo "Expected analyzer output is missing: $OUTPUT_DIR/$report" >&2
-                exit 1
-              fi
-            done
-            simulink-model-drift validate drift \
-              "$OUTPUT_DIR/model-drift.json"
-            exit "$analyzer_status"
-          else
-            simulink-model-drift compare \
-              --base examples/canonical/controller-base.model.json \
-              --target examples/canonical/controller-target.model.json \
-              --rules examples/rules/default-rules.yml \
-              --output build/contract-fixture \
-              --fail-on none
-            simulink-model-drift validate drift \
-              build/contract-fixture/model-drift.json
-          fi
+          simulink-model-drift validate drift build/action-smoke/model-drift.json
+          test -s build/action-smoke/model-drift.md
+          test -s build/action-smoke/model-drift.sarif
+          test -s build/action-smoke/model-drift.svg
 
       - name: Write job summary
         if: always()
         shell: bash
         run: |
-          if [[ -f "$OUTPUT_DIR/model-drift.md" ]]; then
-            cat "$OUTPUT_DIR/model-drift.md" >> "$GITHUB_STEP_SUMMARY"
-          elif [[ -f build/contract-fixture/model-drift.md ]]; then
-            echo "> Contract smoke test only; no changed SLX model was analyzed." \
-              >> "$GITHUB_STEP_SUMMARY"
+          if [[ -f build/action-smoke/model-drift.md ]]; then
+            echo "> Canonical contract and composite-action smoke test." >> "$GITHUB_STEP_SUMMARY"
             echo >> "$GITHUB_STEP_SUMMARY"
-            cat build/contract-fixture/model-drift.md >> "$GITHUB_STEP_SUMMARY"
+            cat build/action-smoke/model-drift.md >> "$GITHUB_STEP_SUMMARY"
           else
             {
               echo "## Simulink Model Drift"
@@ -152,24 +99,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: simulink-model-drift-${{ github.run_id }}
-          path: |
-            build/model-drift/
-            build/contract-fixture/
+          path: build/action-smoke/
           if-no-files-found: warn
           retention-days: 14
-
-      - name: Upload actionable SARIF
-        if: >-
-          ${{
-            always() &&
-            steps.analyze.outcome == 'success' &&
-            hashFiles('build/model-drift/*.sarif') != '' &&
-            (
-              github.event_name != 'pull_request' ||
-              github.event.pull_request.head.repo.full_name == github.repository
-            )
-          }}
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: build/model-drift
-          category: simulink-model-drift

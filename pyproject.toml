@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "simulink-model-drift"
-version = "0.1.0"
+version = "0.2.0"
 description = "Deterministic contracts and tooling for semantic Simulink model drift analysis"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -12,7 +12,7 @@ license = { file = "LICENSE" }
 authors = [{ name = "Simulink Model Drift Analyzer contributors" }]
 keywords = ["simulink", "model-diff", "sarif", "github-actions"]
 classifiers = [
-  "Development Status :: 2 - Pre-Alpha",
+  "Development Status :: 3 - Alpha",
   "Environment :: Console",
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
@@ -41,11 +41,20 @@ packages = ["src/model_drift"]
 
 [tool.hatch.build.targets.sdist]
 include = [
+  "/.github",
   "/src",
   "/tests",
   "/model-drift",
   "/examples",
+  "/docs",
+  "/tools",
+  "/action.yml",
+  "/CHANGELOG.md",
+  "/CONTRIBUTING.md",
   "/README.md",
+  "/ROADMAP.md",
+  "/SECURITY.md",
+  "/SUPPORT.md",
   "/LICENSE",
   "/pyproject.toml",
 ]

@@ -31,15 +31,14 @@ flowchart LR
 
 ## GitHub Actions permissions
 
-The checked-in workflow grants only:
+The composite action requests no permissions. The repository CI and canonical caller grant:
 
 ```yaml
 permissions:
   contents: read
-  security-events: write
 ```
 
-It does not request pull-request write permission. SARIF upload is conditional because `security-events: write` is generally unavailable to workflows triggered by untrusted fork pull requests. Artifacts and the job summary remain available when SARIF cannot be uploaded.
+The optional SARIF job grants `security-events: write` only at that job and skips fork pull requests. The analyzer job does not request pull-request write permission or secrets. Artifacts and the job summary remain the portable evidence when SARIF cannot be uploaded.
 
 If comments or check-run annotations are added later, put them in a separate, carefully designed workflow rather than broadening the analyzer's permissions. Do not use `pull_request_target` to check out and execute untrusted pull-request code.
 

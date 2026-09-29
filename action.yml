@@ -1,0 +1,134 @@
+name: Simulink Model Drift
+description: Compare canonical Simulink model manifests or invoke a configured semantic extractor.
+author: Simulink Model Drift Analyzer contributors
+
+branding:
+  icon: git-compare
+  color: blue
+
+inputs:
+  base:
+    description: Base canonical manifest or .slx artifact, relative to the caller workspace.
+    required: true
+  target:
+    description: Target canonical manifest or .slx artifact, relative to the caller workspace.
+    required: true
+  rules:
+    description: Rules YAML path, relative to the caller workspace.
+    required: true
+  output-dir:
+    description: Directory for deterministic JSON, Markdown, SARIF, and SVG reports.
+    required: false
+    default: build/model-drift
+  fail-on:
+    description: Policy level that fails the action (none, warning, or error).
+    required: false
+    default: error
+  extractor-command:
+    description: >-
+      Command that emits one canonical manifest on stdout for each .slx input.
+      Use {artifact} as the path placeholder. Required only for .slx inputs.
+    required: false
+    default: ""
+  python-version:
+    description: Python version installed by actions/setup-python.
+    required: false
+    default: "3.12"
+
+outputs:
+  drift-json:
+    description: Path to the complete drift manifest.
+    value: ${{ steps.analyze.outputs.drift-json }}
+  markdown:
+    description: Path to the reviewer-friendly Markdown report.
+    value: ${{ steps.analyze.outputs.markdown }}
+  sarif:
+    description: Path to the actionable SARIF report.
+    value: ${{ steps.analyze.outputs.sarif }}
+  svg:
+    description: Path to the deterministic SVG summary.
+    value: ${{ steps.analyze.outputs.svg }}
+  drift-sha256:
+    description: SHA-256 of the generated drift manifest.
+    value: ${{ steps.analyze.outputs.drift-sha256 }}
+  exit-code:
+    description: Analyzer exit code; see docs/cli.md for the stable exit-code contract.
+    value: ${{ steps.analyze.outputs.exit-code }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install Simulink Model Drift
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        python -m pip install --disable-pip-version-check "$ACTION_PATH"
+
+    - name: Analyze model drift
+      id: analyze
+      shell: bash
+      env:
+        INPUT_BASE: ${{ inputs.base }}
+        INPUT_TARGET: ${{ inputs.target }}
+        INPUT_RULES: ${{ inputs.rules }}
+        INPUT_OUTPUT_DIR: ${{ inputs.output-dir }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_EXTRACTOR_COMMAND: ${{ inputs.extractor-command }}
+      run: |
+        set -uo pipefail
+
+        case "$INPUT_FAIL_ON" in
+          none|warning|error) ;;
+          *)
+            echo "fail-on must be one of: none, warning, error" >&2
+            exit 2
+            ;;
+        esac
+
+        command=(
+          simulink-model-drift analyze
+          --base "$INPUT_BASE"
+          --target "$INPUT_TARGET"
+          --output "$INPUT_OUTPUT_DIR"
+          --fail-on "$INPUT_FAIL_ON"
+        )
+        command+=(--rules "$INPUT_RULES")
+        if [[ -n "$INPUT_EXTRACTOR_COMMAND" ]]; then
+          command+=(--extractor-command "$INPUT_EXTRACTOR_COMMAND")
+        fi
+
+        set +e
+        "${command[@]}"
+        status=$?
+        set -e
+
+        {
+          echo "drift-json=$INPUT_OUTPUT_DIR/model-drift.json"
+          echo "markdown=$INPUT_OUTPUT_DIR/model-drift.md"
+          echo "sarif=$INPUT_OUTPUT_DIR/model-drift.sarif"
+          echo "svg=$INPUT_OUTPUT_DIR/model-drift.svg"
+          echo "exit-code=$status"
+        } >> "$GITHUB_OUTPUT"
+
+        if [[ -f "$INPUT_OUTPUT_DIR/model-drift.json" ]]; then
+          python - "$INPUT_OUTPUT_DIR/model-drift.json" "$GITHUB_OUTPUT" <<'PY'
+        import hashlib
+        import pathlib
+        import sys
+
+        report = pathlib.Path(sys.argv[1])
+        output = pathlib.Path(sys.argv[2])
+        digest = hashlib.sha256(report.read_bytes()).hexdigest()
+        with output.open("a", encoding="utf-8") as stream:
+            stream.write(f"drift-sha256={digest}\n")
+        PY
+        fi
+
+        exit "$status"

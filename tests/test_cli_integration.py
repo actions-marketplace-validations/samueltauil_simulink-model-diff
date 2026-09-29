@@ -117,11 +117,15 @@ def test_analyze_cli_extracts_slx_inputs_and_emits_reports() -> None:
                     "import json",
                     "import sys",
                     "from pathlib import Path",
-                    f"fixtures = {{'base.slx': Path({str(BASE)!r}).read_text(encoding='utf-8'), 'target.slx': Path({str(TARGET)!r}).read_text(encoding='utf-8')}}",
+                    "fixtures = {",
+                    f"    'base.slx': Path({str(BASE)!r}).read_text(encoding='utf-8'),",
+                    f"    'target.slx': Path({str(TARGET)!r}).read_text(encoding='utf-8'),",
+                    "}",
                     "artifact = Path(sys.argv[1])",
                     "manifest = json.loads(fixtures[artifact.name])",
                     "manifest['source']['artifact'] = artifact.name",
-                    "manifest['source']['artifactSha256'] = hashlib.sha256(artifact.read_bytes()).hexdigest()",
+                    "manifest['source']['artifactSha256'] = "
+                    "hashlib.sha256(artifact.read_bytes()).hexdigest()",
                     "print(json.dumps(manifest))",
                 ]
             ),
@@ -150,6 +154,58 @@ def test_analyze_cli_extracts_slx_inputs_and_emits_reports() -> None:
         assert (out / "model-drift.md").exists()
         assert (out / "model-drift.sarif").exists()
         assert (out / "model-drift.svg").exists()
+
+
+def test_analyze_cli_emits_reports_for_valid_partial_extraction() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        artifact = root / "model.slx"
+        artifact.write_bytes(b"model")
+        partial = deepcopy(_json(BASE))
+        partial["analysis"] = {
+            "status": "partial",
+            "warnings": ["Static extraction only."],
+            "unsupportedFeatures": ["compiled-model-attributes"],
+        }
+        script = root / "extractor.py"
+        script.write_text(
+            "\n".join(
+                [
+                    "import hashlib",
+                    "import json",
+                    "import sys",
+                    "from pathlib import Path",
+                    f"manifest = {partial!r}",
+                    "artifact = Path(sys.argv[1])",
+                    "manifest['source']['artifact'] = artifact.name",
+                    "manifest['source']['artifactSha256'] = "
+                    "hashlib.sha256(artifact.read_bytes()).hexdigest()",
+                    "print(json.dumps(manifest))",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        output = root / "output"
+
+        result = main(
+            [
+                "analyze",
+                "--base",
+                str(artifact),
+                "--target",
+                str(artifact),
+                "--output",
+                str(output),
+                "--fail-on",
+                "none",
+                "--extractor-command",
+                f"python {script.as_posix()} {{artifact}}",
+            ]
+        )
+
+        assert result == 4
+        assert (output / "model-drift.json").is_file()
+        assert (output / "model-drift.sarif").is_file()
 
 
 def test_compare_cli_rejects_invalid_canonical_contract(capsys: object) -> None:
