@@ -259,7 +259,7 @@ permissions:
   contents: read
 
 steps:
-  - uses: actions/checkout@v4
+  - uses: actions/checkout@v7
     with:
       persist-credentials: false
   - uses: YOUR-ORG/simulink-model-drift@v0.2.0

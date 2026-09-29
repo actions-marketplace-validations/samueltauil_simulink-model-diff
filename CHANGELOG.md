@@ -4,6 +4,10 @@ All notable user-visible changes are documented here. The project follows Semant
 
 ## Unreleased
 
+### Changed
+
+- Updated first-party GitHub Actions dependencies to their Node.js 24-compatible v7 releases.
+
 ## 0.2.0 - 2026-09-29
 
 ### Added
