@@ -62,6 +62,23 @@ class PackageInventoryTests(unittest.TestCase):
                 result.unsupported_features,
             )
 
+    def test_simulink_structure_summary_identifies_key_slx_members(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            artifact = Path(directory) / "model.slx"
+            with zipfile.ZipFile(artifact, "w", zipfile.ZIP_DEFLATED) as package:
+                package.writestr("[Content_Types].xml", CONTENT_TYPES)
+                package.writestr("metadata/mwcoreProperties.xml", "<props/>")
+                package.writestr("simulink/blockdiagram.xml", "<Model/>")
+                package.writestr("simulink/stateflow.xml", "<Stateflow/>")
+
+            result = inspect_slx_package(artifact)
+
+            self.assertTrue(result.structure["likelySimulinkPackage"])
+            self.assertTrue(result.structure["hasBlockDiagram"])
+            self.assertTrue(result.structure["hasStateflow"])
+            self.assertIn("simulink/blockdiagram.xml", result.structure["keyFiles"])
+            self.assertIn("metadata/mwcoreProperties.xml", result.structure["keyFiles"])
+
     def test_plain_zip_is_explicitly_unsupported(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             artifact = Path(directory) / "model.slx"

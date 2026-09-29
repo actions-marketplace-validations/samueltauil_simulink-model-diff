@@ -4,7 +4,8 @@ import hashlib
 import xml.etree.ElementTree as ET
 import zipfile
 from collections import Counter
-from dataclasses import dataclass
+from collections.abc import Sequence
+from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import BinaryIO
 
@@ -69,6 +70,7 @@ class PackageInventory:
     warnings: tuple[str, ...] = ()
     unsupported_features: tuple[str, ...] = ()
     error: str | None = None
+    structure: dict[str, object] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -84,6 +86,7 @@ class PackageInventory:
                 "isZip": self.is_zip,
                 "isOpc": self.is_opc,
                 "entries": [entry.to_dict() for entry in self.entries],
+                "structure": self.structure,
             },
         }
 
@@ -119,6 +122,7 @@ def inspect_slx_package(
             unsupported_features=(
                 "Artifact exceeds the configured compressed archive size limit.",
             ),
+            structure=_summarize_simulink_structure(()),
         )
 
     try:
@@ -151,9 +155,13 @@ def inspect_slx_package(
                     is_opc=_CONTENT_TYPES_PART in package.namelist(),
                     warnings=tuple(sorted(warnings)),
                     unsupported_features=tuple(sorted(unsupported)),
+                    structure=_summarize_simulink_structure(
+                        [info.filename for info in infos]
+                    ),
                 )
 
             names = [info.filename for info in infos]
+            structure = _summarize_simulink_structure(names)
             duplicate_names = sorted(
                 name for name, count in Counter(names).items() if count > 1
             )
@@ -192,6 +200,7 @@ def inspect_slx_package(
                     is_opc=False,
                     warnings=tuple(sorted(warnings)),
                     unsupported_features=tuple(sorted(unsupported)),
+                    structure=structure,
                 )
 
             content_types = _read_content_types(package, active_limits)
@@ -231,6 +240,7 @@ def inspect_slx_package(
                 entries=entries,
                 warnings=tuple(sorted(warnings)),
                 unsupported_features=tuple(sorted(unsupported)),
+                structure=structure,
             )
     except (zipfile.BadZipFile, EOFError, OSError, ET.ParseError, RuntimeError) as exc:
         return _failed(
@@ -257,7 +267,42 @@ def _failed(
         is_zip=is_zip,
         is_opc=is_opc,
         error=message,
+        structure=_summarize_simulink_structure(()),
     )
+
+
+def _summarize_simulink_structure(names: Sequence[str]) -> dict[str, object]:
+    normalized = [PurePosixPath(name).as_posix() for name in names if name]
+    directories = sorted({
+        PurePosixPath(name).parts[0]
+        for name in normalized
+        if PurePosixPath(name).parts and name not in {"[Content_Types].xml"}
+    })
+    key_files = [
+        name
+        for name in (
+            "[Content_Types].xml",
+            "simulink/blockdiagram.xml",
+            "simulink/stateflow.xml",
+            "simulink/configSetInfo.xml",
+            "simulink/modelDictionary.xml",
+            "metadata/mwcoreProperties.xml",
+            "metadata/thumbnail.png",
+            "_rels/.rels",
+        )
+        if name in normalized
+    ]
+    return {
+        "likelySimulinkPackage": any(
+            name.startswith("simulink/") or name.startswith("metadata/")
+            for name in normalized
+        ) or "[Content_Types].xml" in normalized,
+        "rootDirectories": directories,
+        "keyFiles": key_files,
+        "hasBlockDiagram": "simulink/blockdiagram.xml" in normalized,
+        "hasStateflow": "simulink/stateflow.xml" in normalized,
+        "hasMetadataManifest": "metadata/mwcoreProperties.xml" in normalized,
+    }
 
 
 def _hash_file(path: Path) -> str:

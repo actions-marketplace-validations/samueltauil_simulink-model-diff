@@ -129,6 +129,12 @@ simulink-model-drift analyze \
 
 The lower-level `analyze`, `compare`, `validate`, `doctor`, `schema`, and `fingerprint` commands are documented in [the CLI guide](docs/cli.md). Pair-oriented output names and contracts belong to those interfaces; PR analysis uses the aggregate files listed above.
 
+## Simulink `.slx` format basics
+
+Official MathWorks guidance describes the `.slx` file as a ZIP-based Open Packaging Convention (OPC) package, not as a single XML document. The package typically contains a root `[Content_Types].xml` manifest plus model and metadata members such as `simulink/blockdiagram.xml`, `simulink/configSetInfo.xml`, `simulink/stateflow.xml`, and `metadata/mwcoreProperties.xml`.
+
+`simulink-model-drift inspect-slx <artifact>` validates that this package structure is present and emits an inventory without claiming semantic extraction. This is intentionally a bounded safety check: the file may be a valid Simulink package while still needing an approved MATLAB/Simulink extractor to produce a trustworthy canonical manifest.
+
 ## Capability boundaries
 
 - Structural drift is not proof of behavioral equivalence.
