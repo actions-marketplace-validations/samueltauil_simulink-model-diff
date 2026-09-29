@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "runs": [
+    {
+      "results": [
+        {
+          "level": "error",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "controller/VehicleSpeed",
+                  "kind": "Simulink Inport"
+                }
+              ],
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/controller-target.slx",
+                  "uriBaseId": "%SRCROOT%"
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "VehicleSpeed data type changed from double to single."
+          },
+          "partialFingerprints": {
+            "modelDrift/v1": "8b321acfd589fdda3544371f67b41e23af194faf9ca642c8a0ce9c9d5751a883"
+          },
+          "properties": {
+            "after": "single",
+            "before": "double",
+            "category": "interface",
+            "changeId": "chg-030848aa83a85dec964b7263",
+            "changeKind": "modified",
+            "elementId": "interface:inport:VehicleSpeed",
+            "modelPath": "controller/VehicleSpeed",
+            "property": "dataType"
+          },
+          "ruleId": "SIMULINK-IFACE-001"
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "controller/SpeedLoop/Gain",
+                  "kind": "Simulink Block"
+                }
+              ],
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/controller-target.slx",
+                  "uriBaseId": "%SRCROOT%"
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Gain changed from 2.5 to 3.0."
+          },
+          "partialFingerprints": {
+            "modelDrift/v1": "bbde036f4d0a7942c9f825e9a3e051ba8a63bb64c82320fae65f71d7c1b27818"
+          },
+          "properties": {
+            "after": "3.0",
+            "before": "2.5",
+            "category": "parameter",
+            "changeId": "chg-8c882c9477f1195787029296",
+            "changeKind": "modified",
+            "elementId": "block:controller/SpeedLoop/Gain",
+            "modelPath": "controller/SpeedLoop/Gain",
+            "property": "parameters.Gain.value"
+          },
+          "ruleId": "SIMULINK-PARAM-001"
+        }
+      ],
+      "tool": {
+        "driver": {
+          "informationUri": "https://github.com/github/simulink-model-drift",
+          "name": "Simulink Model Drift Analyzer",
+          "rules": [
+            {
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "id": "SIMULINK-IFACE-001",
+              "name": "TopLevelInterfaceDataTypeChanged",
+              "properties": {
+                "category": "interface"
+              },
+              "shortDescription": {
+                "text": "Top-level interface data type changed"
+              }
+            },
+            {
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "id": "SIMULINK-PARAM-001",
+              "name": "GainParameterChanged",
+              "properties": {
+                "category": "parameter"
+              },
+              "shortDescription": {
+                "text": "Gain parameter changed"
+              }
+            }
+          ],
+          "version": "0.1.0"
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}

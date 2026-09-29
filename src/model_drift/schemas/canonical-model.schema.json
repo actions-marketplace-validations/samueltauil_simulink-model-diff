@@ -1,0 +1,254 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.org/simulink-model-drift/canonical-model/0.1.0",
+  "title": "Canonical Simulink Model Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "generator",
+    "source",
+    "analysis",
+    "model",
+    "interfaces",
+    "systems",
+    "blocks",
+    "connections",
+    "stateflow",
+    "configuration",
+    "references",
+    "fingerprints"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": "0.1.0" },
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "strategy"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "strategy": { "type": "string", "minLength": 1 }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact", "artifactSha256", "simulinkRelease"],
+      "properties": {
+        "artifact": { "$ref": "#/$defs/repositoryPath" },
+        "artifactSha256": { "$ref": "#/$defs/sha256" },
+        "simulinkRelease": { "type": ["string", "null"] }
+      }
+    },
+    "analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "warnings", "unsupportedFeatures"],
+      "properties": {
+        "status": { "$ref": "#/$defs/analysisStatus" },
+        "warnings": { "type": "array", "items": { "type": "string" } },
+        "unsupportedFeatures": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "modelType", "rootPath"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "modelType": { "type": "string", "minLength": 1 },
+        "rootPath": { "type": "string", "minLength": 1 }
+      }
+    },
+    "interfaces": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inports", "outports", "triggerPorts", "enablePorts", "buses"],
+      "properties": {
+        "inports": { "$ref": "#/$defs/interfaceArray" },
+        "outports": { "$ref": "#/$defs/interfaceArray" },
+        "triggerPorts": { "$ref": "#/$defs/interfaceArray" },
+        "enablePorts": { "$ref": "#/$defs/interfaceArray" },
+        "buses": { "$ref": "#/$defs/objectArray" }
+      }
+    },
+    "systems": { "$ref": "#/$defs/objectArray" },
+    "blocks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/block" }
+    },
+    "connections": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/connection" }
+    },
+    "stateflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["charts", "states", "transitions", "junctions", "events", "data"],
+      "properties": {
+        "charts": { "$ref": "#/$defs/objectArray" },
+        "states": { "$ref": "#/$defs/objectArray" },
+        "transitions": { "$ref": "#/$defs/objectArray" },
+        "junctions": { "$ref": "#/$defs/objectArray" },
+        "events": { "$ref": "#/$defs/objectArray" },
+        "data": { "$ref": "#/$defs/objectArray" }
+      }
+    },
+    "configuration": { "type": "object" },
+    "references": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["models", "libraries", "dataDictionaries", "requirements"],
+      "properties": {
+        "models": { "$ref": "#/$defs/stringArray" },
+        "libraries": { "$ref": "#/$defs/stringArray" },
+        "dataDictionaries": { "$ref": "#/$defs/stringArray" },
+        "requirements": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "fingerprints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "structure", "interfaces", "parameters", "stateflow", "configuration"],
+      "properties": {
+        "model": { "$ref": "#/$defs/sha256" },
+        "structure": { "$ref": "#/$defs/sha256" },
+        "interfaces": { "$ref": "#/$defs/sha256" },
+        "parameters": { "$ref": "#/$defs/sha256" },
+        "stateflow": { "$ref": "#/$defs/sha256" },
+        "configuration": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  },
+  "$defs": {
+    "analysisStatus": {
+      "enum": ["complete", "partial", "unsupported", "failed"]
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z]:/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "stringArray": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "objectArray": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "interfaceArray": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/interface" }
+    },
+    "interface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "direction",
+        "port",
+        "dataType",
+        "dimensions",
+        "sampleTime",
+        "unit",
+        "minimum",
+        "maximum"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "direction": { "enum": ["input", "output", "trigger", "enable"] },
+        "port": { "type": "integer", "minimum": 1 },
+        "dataType": { "type": ["string", "null"] },
+        "dimensions": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "sampleTime": { "type": ["string", "null"] },
+        "unit": { "type": ["string", "null"] },
+        "minimum": { "$ref": "#/$defs/jsonScalar" },
+        "maximum": { "$ref": "#/$defs/jsonScalar" }
+      }
+    },
+    "block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "name", "blockType", "parent", "ports", "reference", "parameters"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "blockType": { "type": "string", "minLength": 1 },
+        "parent": { "type": "string", "minLength": 1 },
+        "reference": { "type": ["string", "null"] },
+        "ports": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["inputs", "outputs"],
+          "properties": {
+            "inputs": { "type": "integer", "minimum": 0 },
+            "outputs": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/parameter" }
+        }
+      }
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "valueType"],
+      "properties": {
+        "value": {},
+        "valueType": { "type": "string", "minLength": 1 }
+      }
+    },
+    "connection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "source", "destination", "signal"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "source": { "$ref": "#/$defs/endpoint" },
+        "destination": { "$ref": "#/$defs/endpoint" },
+        "signal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "dataType", "dimensions", "unit"],
+          "properties": {
+            "name": { "type": ["string", "null"] },
+            "dataType": { "type": ["string", "null"] },
+            "dimensions": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 1 }
+            },
+            "unit": { "type": ["string", "null"] }
+          }
+        }
+      }
+    },
+    "endpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["blockId", "port"],
+      "properties": {
+        "blockId": { "type": "string", "minLength": 1 },
+        "port": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "jsonScalar": {
+      "type": ["string", "number", "integer", "boolean", "null"]
+    }
+  }
+}

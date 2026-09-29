@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.org/simulink-model-drift/drift-manifest/0.1.0",
+  "title": "Simulink Model Drift Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "comparison", "summary", "changes"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": "0.1.0" },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseArtifact", "targetArtifact", "status"],
+      "properties": {
+        "baseArtifact": { "$ref": "#/$defs/repositoryPath" },
+        "targetArtifact": { "$ref": "#/$defs/repositoryPath" },
+        "status": { "$ref": "#/$defs/analysisStatus" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["added", "removed", "modified", "moved", "interfaceChanges"],
+      "properties": {
+        "added": { "$ref": "#/$defs/count" },
+        "removed": { "$ref": "#/$defs/count" },
+        "modified": { "$ref": "#/$defs/count" },
+        "moved": { "$ref": "#/$defs/count" },
+        "interfaceChanges": { "$ref": "#/$defs/count" }
+      }
+    },
+    "changes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/change" }
+    }
+  },
+  "$defs": {
+    "analysisStatus": {
+      "enum": ["complete", "partial", "unsupported", "failed"]
+    },
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z]:/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "changeId",
+        "kind",
+        "category",
+        "elementType",
+        "elementId",
+        "modelPath",
+        "functionalClassification",
+        "evidence"
+      ],
+      "properties": {
+        "changeId": {
+          "type": "string",
+          "pattern": "^chg-[A-Za-z0-9][A-Za-z0-9._:-]*$"
+        },
+        "kind": {
+          "enum": [
+            "added",
+            "removed",
+            "modified",
+            "moved",
+            "renamed",
+            "reconnected",
+            "unresolved",
+            "unsupported"
+          ]
+        },
+        "category": {
+          "enum": [
+            "package",
+            "model",
+            "system",
+            "block",
+            "parameter",
+            "connection",
+            "interface",
+            "signal",
+            "stateflow",
+            "configuration",
+            "reference",
+            "requirement",
+            "generated-code",
+            "behavior",
+            "analysis"
+          ]
+        },
+        "elementType": { "type": "string", "minLength": 1 },
+        "elementId": { "type": "string", "minLength": 1 },
+        "modelPath": { "type": "string", "minLength": 1 },
+        "blockType": { "type": "string", "minLength": 1 },
+        "property": { "type": ["string", "null"] },
+        "before": {},
+        "after": {},
+        "functionalClassification": {
+          "enum": ["functional", "potentially-functional", "non-functional", "unknown"]
+        },
+        "evidence": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["extractor"],
+              "properties": {
+                "extractor": { "type": "string", "minLength": 1 },
+                "details": { "type": "object" }
+              }
+            }
+          ]
+        },
+        "match": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["strategy", "confidence"],
+              "properties": {
+                "strategy": { "type": "string", "minLength": 1 },
+                "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

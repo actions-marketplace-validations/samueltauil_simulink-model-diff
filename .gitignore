@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.coverage
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+dist/
+build/
+htmlcov/
+
+# Analyzer outputs and local MATLAB artifacts
+model-drift-output/
+*.autosave
+*.slxc
+slprj/

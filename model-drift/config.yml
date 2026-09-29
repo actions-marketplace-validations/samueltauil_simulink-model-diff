@@ -1,0 +1,18 @@
+schemaVersion: "0.1.0"
+extractor:
+  strategy: simulink-api
+  failOnIncompleteAnalysis: true
+comparison:
+  identityStrategy: normalized-path
+  inferMoves: false
+reporting:
+  outputDirectory: model-drift-output
+  formats:
+    - json
+    - markdown
+    - sarif
+policy:
+  rules:
+    - model-drift/rules/default-rules.yml
+  failureLevels:
+    - error

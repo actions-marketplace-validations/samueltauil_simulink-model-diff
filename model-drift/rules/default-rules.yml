@@ -1,0 +1,55 @@
+rules:
+  - id: SIMULINK-ANALYSIS-001
+    title: Model analysis incomplete
+    description: Incomplete analysis can hide model drift and must remain visible.
+    category: analysis
+    level: error
+    match:
+      analysisStatus:
+        - partial
+        - unsupported
+        - failed
+
+  - id: SIMULINK-IFACE-001
+    title: Top-level interface data type changed
+    description: Changing a top-level port data type can break model consumers.
+    category: interface
+    level: error
+    match:
+      category: interface
+      elementType: inport
+      property: dataType
+      kind: modified
+
+  - id: SIMULINK-IFACE-002
+    title: Top-level output data type changed
+    description: Changing a top-level output data type can break model consumers.
+    category: interface
+    level: error
+    match:
+      category: interface
+      elementType: outport
+      property: dataType
+      kind: modified
+
+  - id: SIMULINK-PARAM-001
+    title: Gain parameter changed
+    description: A changed Gain value may alter model behavior and requires review.
+    category: parameter
+    level: warning
+    match:
+      category: parameter
+      elementType: block
+      blockType: Gain
+      property: parameters.Gain.value
+      kind: modified
+
+  - id: SIMULINK-STATEFLOW-001
+    title: Stateflow transition removed
+    description: Removing a Stateflow transition may alter model behavior.
+    category: stateflow
+    level: warning
+    match:
+      category: stateflow
+      elementType: transition
+      kind: removed

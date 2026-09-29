@@ -1,0 +1,28 @@
+rules:
+  - id: SIMULINK-IFACE-001
+    title: Top-level interface data type changed
+    category: interface
+    level: error
+    match:
+      elementType: inport
+      property: dataType
+      kind: modified
+
+  - id: SIMULINK-PARAM-001
+    title: Gain parameter changed
+    category: parameter
+    level: warning
+    match:
+      elementType: block
+      property: parameters.Gain.value
+      kind: modified
+
+  - id: SIMULINK-ANALYSIS-001
+    title: Model analysis incomplete
+    category: analysis
+    level: error
+    match:
+      analysisStatus:
+        - partial
+        - unsupported
+        - failed
