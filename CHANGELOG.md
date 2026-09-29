@@ -4,8 +4,16 @@ All notable user-visible changes are documented here. The project follows Semant
 
 ## Unreleased
 
+### Added
+
+- PR-native composite action around `simulink-model-drift pr`, with GitHub-context ref defaults, include globs, aggregate report outputs, and automatic job-summary rendering.
+- Reusable `workflow_call` PR analysis workflow with full-history checkout, report artifact upload, and a separately permissioned, fork-safe optional SARIF job.
+- Minimal consumer and manually approved licensed-runner examples.
+
 ### Changed
 
+- Reframed the product, onboarding, architecture, security, and runner guidance around automatic pull-request model drift analysis.
+- Replaced pair-oriented action inputs and outputs with the upcoming `v0.3.0` PR contract. This is a breaking action-interface change from `v0.2.0`.
 - Updated first-party GitHub Actions dependencies to their Node.js 24-compatible v7 releases.
 
 ## 0.2.0 - 2026-09-29

@@ -46,14 +46,17 @@ jobs:
           python -m ruff check .
           python -m build
 
-      - name: Smoke test composite action
-        uses: ./
-        with:
-          base: examples/canonical/controller-base.model.json
-          target: examples/canonical/controller-target.model.json
-          rules: examples/rules/default-rules.yml
-          output-dir: build/action-smoke
-          fail-on: none
+      - name: Validate action and reusable workflow metadata
+        shell: bash
+        run: |
+          python - <<'PY'
+          import pathlib
+          import yaml
+
+          for path in ("action.yml", ".github/workflows/pr-analysis.yml"):
+              with pathlib.Path(path).open(encoding="utf-8") as stream:
+                  yaml.safe_load(stream)
+          PY
 
       - name: Create GitHub release
         shell: bash

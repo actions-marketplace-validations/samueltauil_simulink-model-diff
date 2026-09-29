@@ -1,11 +1,12 @@
 # Releasing
 
-Releases distribute the Python package and the root composite action for the supported product workflow. The supported path is deterministic canonical comparison with versioned artifacts and clear limitations. A MathWorks semantic extractor remains an optional, separately validated integration that must meet the same release quality and security requirements before it is treated as a supported product capability.
+Releases distribute the Python package, root composite action, and reusable PR workflow as one product contract. A MathWorks semantic extractor remains an optional, separately validated integration that must meet the same release quality and security requirements before it is treated as a supported product capability.
 
 ## Supported release path
 
 - Ship the Python package at a versioned release and keep the wheel and source archive available.
-- Publish the composite action from the repository root with versioned tags and a documented compatibility policy.
+- Publish the composite action and `.github/workflows/pr-analysis.yml` from the same versioned tag.
+- Verify that the reusable workflow self-reference resolves to that release's action contract.
 - Treat canonical manifests, drift schemas, and report outputs as the product's durable contract.
 - Keep MathWorks-specific semantic claims out of the release narrative unless they are explicitly validated and documented as licensed, supported integrations.
 
@@ -22,7 +23,7 @@ Releases distribute the Python package and the root composite action for the sup
    ```
 
 4. Install the built wheel in a clean environment and run the canonical example.
-5. Validate `action.yml` and exercise `uses: ./` with the repository workflow.
+5. Validate `action.yml`, the reusable workflow, and consumer examples.
 6. Confirm documentation and example links resolve.
 
 ## Publish
@@ -31,7 +32,7 @@ Create and push a signed `vX.Y.Z` tag whose version exactly matches `pyproject.t
 
 The workflow does not publish to PyPI. Add a separate trusted-publishing job only after the project name, publisher, environment protection, and ownership are configured.
 
-For action consumers, publish immutable patch releases. Before 1.0, examples and consumers should pin an exact release tag such as `v0.2.0`; introduce a movable compatibility tag only with an explicit compatibility policy. Consumers with stricter supply-chain requirements should pin the full release commit SHA.
+For action consumers, publish immutable patch releases. The PR-native action contract first ships as `v0.3.0`; examples and consumers should pin that exact release or its full commit SHA. Introduce a movable compatibility tag only with an explicit compatibility policy.
 
 ## Compatibility
 

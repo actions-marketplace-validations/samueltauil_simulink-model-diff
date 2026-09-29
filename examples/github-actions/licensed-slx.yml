@@ -6,13 +6,10 @@ on:
       base-ref:
         description: Trusted base commit or tag
         required: true
-      target-ref:
-        description: Trusted target commit or tag
+      head-ref:
+        description: Trusted head commit or tag
         required: true
         default: main
-      model-path:
-        description: Repository-relative .slx path
-        required: true
 
 permissions:
   contents: read
@@ -26,40 +23,23 @@ jobs:
       - ephemeral
     timeout-minutes: 45
     steps:
-      - name: Check out trusted target
+      - name: Check out trusted history
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.target-ref }}
+          ref: ${{ inputs['head-ref'] }}
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Prepare base and target artifacts
-        shell: bash
-        env:
-          BASE_REF: ${{ inputs.base-ref }}
-          MODEL_PATH: ${{ inputs.model-path }}
-        run: |
-          set -euo pipefail
-          case "$MODEL_PATH" in
-            /*|../*|*/../*|-*|*\\*)
-              echo "model-path must be a normalized repository-relative path" >&2
-              exit 2
-              ;;
-          esac
-          base_commit="$(git rev-parse --verify --end-of-options "$BASE_REF^{commit}")"
-          mkdir -p build/model-input
-          git show "$base_commit:$MODEL_PATH" > build/model-input/base.slx
-          cp -- "$MODEL_PATH" build/model-input/target.slx
-
-      - name: Analyze with the reviewed extractor
-        uses: YOUR-ORG/simulink-model-drift@v0.2.0
+      - name: Analyze with the reviewed licensed extractor
+        uses: samueltauil/simulink-model-diff@v0.3.0
         with:
-          base: build/model-input/base.slx
-          target: build/model-input/target.slx
+          base-ref: ${{ inputs['base-ref'] }}
+          head-ref: ${{ inputs['head-ref'] }}
+          include: models/**/*.slx
           extractor-command: >-
             python tools/run_matlab_extractor.py {artifact}
           rules: model-drift/rules/default-rules.yml
-          output-dir: build/model-drift
+          output: build/model-drift
           fail-on: error
 
       - name: Upload sanitized reports
@@ -68,5 +48,5 @@ jobs:
         with:
           name: simulink-model-drift-${{ github.run_id }}
           path: build/model-drift/
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14

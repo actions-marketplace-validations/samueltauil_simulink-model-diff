@@ -89,6 +89,8 @@ def compare_manifests(base: Any, target: Any) -> DriftManifest:
     changes.extend(_compare_blocks(base_manifest, target_manifest, extractor))
     changes.extend(_compare_interfaces(base_manifest, target_manifest, extractor))
     changes.extend(_compare_connections(base_manifest, target_manifest, extractor))
+    changes.extend(_compare_object_collections(base_manifest, target_manifest, extractor))
+    changes.extend(_compare_references(base_manifest, target_manifest, extractor))
     changes.extend(_compare_configuration(base_manifest, target_manifest, extractor))
     if comparison_status is not AnalysisStatus.COMPLETE:
         changes.append(
@@ -537,9 +539,15 @@ def _compare_configuration(
     element_id = f"configuration:{model_path}"
     changes: list[DriftChange] = []
     for property_name, before_value, after_value in _mapping_changes(before, after):
+        if before_value is _MISSING:
+            kind = ChangeKind.ADDED
+        elif after_value is _MISSING:
+            kind = ChangeKind.REMOVED
+        else:
+            kind = ChangeKind.MODIFIED
         changes.append(
             _change(
-                kind=ChangeKind.MODIFIED,
+                kind=kind,
                 category="configuration",
                 element_type="configuration",
                 element_id=element_id,
@@ -552,6 +560,125 @@ def _compare_configuration(
                 match=MatchInfo(strategy="model-root", confidence=1.0),
             )
         )
+    return changes
+
+
+def _compare_object_collections(
+    base: Mapping[str, Any],
+    target: Mapping[str, Any],
+    extractor: str,
+) -> list[DriftChange]:
+    collections = [
+        ("system", "system", base.get("systems", ()), target.get("systems", ())),
+    ]
+    base_stateflow = _mapping(base.get("stateflow"))
+    target_stateflow = _mapping(target.get("stateflow"))
+    for group, element_type in (
+        ("charts", "chart"),
+        ("states", "state"),
+        ("transitions", "transition"),
+        ("junctions", "junction"),
+        ("events", "event"),
+        ("data", "data"),
+    ):
+        collections.append(
+            (
+                "stateflow",
+                element_type,
+                base_stateflow.get(group, ()),
+                target_stateflow.get(group, ()),
+            )
+        )
+
+    changes: list[DriftChange] = []
+    for category, element_type, before_items, after_items in collections:
+        before = _index_semantic_items(before_items, category, element_type)
+        after = _index_semantic_items(after_items, category, element_type)
+        for identity in sorted(before.keys() - after.keys()):
+            item = before[identity]
+            changes.append(
+                _change(
+                    kind=ChangeKind.REMOVED,
+                    category=category,
+                    element_type=element_type,
+                    element_id=identity,
+                    model_path=_semantic_item_path(item, identity),
+                    before=item,
+                    classification=FunctionalClassification.POTENTIALLY_FUNCTIONAL,
+                    extractor=extractor,
+                )
+            )
+        for identity in sorted(after.keys() - before.keys()):
+            item = after[identity]
+            changes.append(
+                _change(
+                    kind=ChangeKind.ADDED,
+                    category=category,
+                    element_type=element_type,
+                    element_id=identity,
+                    model_path=_semantic_item_path(item, identity),
+                    after=item,
+                    classification=FunctionalClassification.POTENTIALLY_FUNCTIONAL,
+                    extractor=extractor,
+                )
+            )
+        for identity in sorted(before.keys() & after.keys()):
+            if before[identity] == after[identity]:
+                continue
+            changes.append(
+                _change(
+                    kind=ChangeKind.MODIFIED,
+                    category=category,
+                    element_type=element_type,
+                    element_id=identity,
+                    model_path=_semantic_item_path(after[identity], identity),
+                    before=before[identity],
+                    after=after[identity],
+                    classification=FunctionalClassification.POTENTIALLY_FUNCTIONAL,
+                    extractor=extractor,
+                    match=MatchInfo(strategy="stable-id", confidence=1.0),
+                )
+            )
+    return changes
+
+
+def _compare_references(
+    base: Mapping[str, Any],
+    target: Mapping[str, Any],
+    extractor: str,
+) -> list[DriftChange]:
+    before = _mapping(base.get("references"))
+    after = _mapping(target.get("references"))
+    changes: list[DriftChange] = []
+    for group in ("models", "libraries", "dataDictionaries", "requirements"):
+        before_values = {str(value) for value in before.get(group, ())}
+        after_values = {str(value) for value in after.get(group, ())}
+        for value in sorted(before_values - after_values):
+            changes.append(
+                _change(
+                    kind=ChangeKind.REMOVED,
+                    category="reference",
+                    element_type=group,
+                    element_id=f"{group}:{value}",
+                    model_path=value,
+                    before=value,
+                    classification=FunctionalClassification.POTENTIALLY_FUNCTIONAL,
+                    extractor=extractor,
+                )
+            )
+        for value in sorted(after_values - before_values):
+            changes.append(
+                _change(
+                    kind=ChangeKind.ADDED,
+                    category="reference",
+                    element_type=group,
+                    element_id=f"{group}:{value}",
+                    model_path=value,
+                    after=value,
+                    classification=FunctionalClassification.POTENTIALLY_FUNCTIONAL,
+                    extractor=extractor,
+                )
+            )
     return changes
 
 
@@ -669,6 +796,39 @@ def _index_by_identity(items: Any) -> dict[str, Mapping[str, Any]]:
         if isinstance(identity, str) and identity:
             result[identity] = item
     return result
+
+
+def _index_semantic_items(
+    items: Any,
+    category: str,
+    element_type: str,
+) -> dict[str, Mapping[str, Any]]:
+    result: dict[str, Mapping[str, Any]] = {}
+    if not isinstance(items, (list, tuple)):
+        return result
+    for index, item in enumerate(items):
+        if not isinstance(item, Mapping):
+            continue
+        identity = item.get("id") or item.get("path") or item.get("name")
+        if not identity:
+            identity = stable_fingerprint(
+                category,
+                element_type,
+                str(index),
+                repr(sorted(item.items())),
+                namespace="simulink-model-drift/semantic-item/v1",
+            )
+        result[str(identity)] = item
+    return result
+
+
+def _semantic_item_path(item: Mapping[str, Any], fallback: str) -> str:
+    return str(
+        item.get("modelPath")
+        or item.get("path")
+        or item.get("name")
+        or fallback
+    )
 
 
 def _changed_leaves(

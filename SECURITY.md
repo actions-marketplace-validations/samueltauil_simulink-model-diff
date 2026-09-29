@@ -14,4 +14,4 @@ Include the affected version, deployment or runner context, reproduction steps, 
 
 Relevant reports include unsafe handling of untrusted model content, command or path injection, archive expansion issues, secrets exposure, unsafe GitHub Actions permissions, misleading success on incomplete analysis, and report rendering vulnerabilities.
 
-The analyzer does not make arbitrary `.slx` files safe to load. Model callbacks, initialization code, custom code, references, and dependencies can execute in MATLAB/Simulink environments. See [the threat model and runner controls](docs/security.md) before enabling semantic extraction.
+Automatic analysis must use `pull_request`, not `pull_request_target`, and must not expose fork content to secrets or licensed self-hosted runners. The analyzer does not make arbitrary `.slx` files safe to load. Model callbacks, initialization code, custom code, references, and dependencies can execute in MATLAB/Simulink environments. See [the threat model and runner controls](docs/security.md) before enabling semantic extraction.

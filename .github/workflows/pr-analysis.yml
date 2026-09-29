@@ -1,0 +1,147 @@
+name: Reusable Simulink model drift
+
+on:
+  workflow_call:
+    inputs:
+      base-ref:
+        description: Base commit SHA or ref; defaults from the pull request event.
+        required: false
+        type: string
+        default: ""
+      head-ref:
+        description: Head commit SHA or ref; defaults from the pull request event.
+        required: false
+        type: string
+        default: ""
+      include:
+        description: Comma- or newline-separated repository-relative model globs.
+        required: false
+        type: string
+        default: |
+          **/*.slx
+          **/*.mdl
+          **/*.model.json
+      rules:
+        description: Repository-relative rules YAML path.
+        required: false
+        type: string
+        default: model-drift/rules/default-rules.yml
+      output:
+        description: Report output directory.
+        required: false
+        type: string
+        default: build/model-drift
+      fail-on:
+        description: Policy level that fails analysis (none, warning, or error).
+        required: false
+        type: string
+        default: error
+      extractor-command:
+        description: Optional canonical extractor command for a non-privileged runner.
+        required: false
+        type: string
+        default: ""
+      python-version:
+        description: Python version for the analyzer.
+        required: false
+        type: string
+        default: "3.12"
+      artifact-retention-days:
+        description: Number of days to retain model drift reports.
+        required: false
+        type: number
+        default: 14
+      upload-sarif:
+        description: Upload SARIF for trusted events when code scanning is available.
+        required: false
+        type: boolean
+        default: false
+    outputs:
+      output:
+        description: Directory containing aggregate and per-model reports.
+        value: ${{ jobs.analyze.outputs.output }}
+      index-json:
+        description: Path to model-drift-index.json.
+        value: ${{ jobs.analyze.outputs['index-json'] }}
+      summary-markdown:
+        description: Path to model-drift-summary.md.
+        value: ${{ jobs.analyze.outputs['summary-markdown'] }}
+      sarif:
+        description: Path to model-drift.sarif.
+        value: ${{ jobs.analyze.outputs.sarif }}
+      exit-code:
+        description: Analyzer exit code.
+        value: ${{ jobs.analyze.outputs['exit-code'] }}
+
+jobs:
+  analyze:
+    name: Analyze PR model drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      output: ${{ steps.drift.outputs.output }}
+      index-json: ${{ steps.drift.outputs['index-json'] }}
+      summary-markdown: ${{ steps.drift.outputs['summary-markdown'] }}
+      sarif: ${{ steps.drift.outputs.sarif }}
+      exit-code: ${{ steps.drift.outputs['exit-code'] }}
+    steps:
+      - name: Check out pull request history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Analyze Simulink model drift
+        id: drift
+        uses: samueltauil/simulink-model-diff@v0.3.0
+        with:
+          base-ref: ${{ inputs['base-ref'] }}
+          head-ref: ${{ inputs['head-ref'] }}
+          include: ${{ inputs.include }}
+          rules: ${{ inputs.rules }}
+          output: ${{ inputs.output }}
+          fail-on: ${{ inputs['fail-on'] }}
+          extractor-command: ${{ inputs['extractor-command'] }}
+          python-version: ${{ inputs['python-version'] }}
+
+      - name: Upload model drift reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: simulink-model-drift-${{ github.run_id }}
+          path: ${{ inputs.output }}
+          if-no-files-found: warn
+          retention-days: ${{ inputs['artifact-retention-days'] }}
+
+  upload-sarif:
+    name: Upload model drift SARIF
+    if: >-
+      ${{
+        always() &&
+        inputs['upload-sarif'] &&
+        needs.analyze.outputs.sarif != '' &&
+        (
+          github.event_name != 'pull_request' ||
+          github.event.pull_request.head.repo.full_name == github.repository
+        )
+      }}
+    needs: analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Download model drift reports
+        uses: actions/download-artifact@v5
+        with:
+          name: simulink-model-drift-${{ github.run_id }}
+          path: ${{ inputs.output }}
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ inputs.output }}/model-drift.sarif
+          category: simulink-model-drift

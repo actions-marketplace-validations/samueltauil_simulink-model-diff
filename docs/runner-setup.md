@@ -1,60 +1,47 @@
-# Production and runner setup
+# Runner setup
 
-## Canonical-only analysis
+## Automatic pull-request analysis
 
-Canonical manifest comparison requires Python 3.11 or newer and no MATLAB license. A GitHub-hosted runner is sufficient. Use a clean checkout, read-only repository permissions, no secrets for fork pull requests, and artifact retention appropriate for model metadata.
+Run the reusable PR workflow on `ubuntu-latest`. It needs Python and full Git history, but no MATLAB license when changed inputs are canonical manifests.
 
-## Semantic `.slx` extraction
+Required controls:
 
-The project does not bundle MATLAB or Simulink. It does include a first-party
-static extractor at `tools/matlab/extract_simulink_model.m`, invoked by:
+- `pull_request`, not `pull_request_target`;
+- `contents: read` for analysis;
+- `fetch-depth: 0`;
+- `persist-credentials: false`;
+- no secrets;
+- no privileged network access;
+- bounded workflow timeout and artifact retention.
 
-```bash
-python tools/run_matlab_extractor.py path/to/model.slx
-```
+The public PR workflow intentionally does not accept a self-hosted runner label.
 
-The implementation uses `load_system`, `find_system`, `get_param`, and
-best-effort Stateflow APIs. It has not been run in this environment against a
-licensed MATLAB installation. Each adopter must establish its supported
-MathWorks release, products, license features, operating system, proprietary
-dependencies, and fixture evidence.
+## Licensed semantic extraction
 
-Before enabling an extractor:
+MATLAB/Simulink extraction is a separate operational boundary. Models can invoke callbacks, initialization scripts, custom code, referenced projects, libraries, and proprietary dependencies. A license-bearing runner must never be the automatic destination for an untrusted fork PR.
 
-1. Validate it against redistributable fixtures for every supported saved-model and runtime release.
-2. Record required products, optional products, unsupported features, and failure behavior.
-3. Confirm whether callbacks, initialization scripts, custom code, referenced models, libraries, data dictionaries, and path setup execute.
-4. Verify that stdout contains only the canonical JSON document and that diagnostics go to stderr.
-5. Confirm deterministic output by extracting the same artifact twice in clean workspaces and comparing bytes and fingerprints.
+Use a separate `workflow_dispatch` or environment-approved workflow for trusted refs. Prefer an ephemeral runner pool with:
 
-## Self-hosted runner baseline
-
-Prefer an ephemeral runner image or pool dedicated to model analysis. Give the runner:
-
-- only the license access and repository read access it needs;
+- only required MATLAB/Simulink products and license access;
 - no deployment credentials or persistent personal tokens;
 - restricted outbound network access;
-- a disposable workspace and bounded job timeout;
-- reviewed MATLAB/Simulink startup state and search paths;
-- resource limits for archive size, generated files, memory, and process duration;
-- log and artifact controls suitable for proprietary model metadata.
+- a disposable workspace;
+- reviewed startup files and search paths;
+- explicit callback and dependency policy;
+- size, time, memory, and generated-file limits;
+- sanitized logs and artifacts.
 
-Do not attach a privileged self-hosted label to an automatic fork pull-request workflow. Use manual dispatch, required environment reviewers, or another trusted promotion step. Treat same-repository branches as trusted only if branch creation and modification are appropriately restricted.
+The example [`licensed-slx.yml`](../examples/github-actions/licensed-slx.yml) uses a protected environment and dedicated labels. Adapt it only after validating how the selected extractor loads models.
 
-## Licensing
-
-License availability is an operational prerequisite, not analyzer success. Document the license mechanism without committing license files, server credentials, or private hostnames. Test checkout and failure behavior before relying on CI. A missing product or license must produce `partial`, `unsupported`, or `failed`, never an empty `complete` manifest.
-
-## Release compatibility evidence
+## Compatibility evidence
 
 For each supported configuration, retain:
 
-- source model saved release and source SHA-256;
-- extractor and analyzer versions;
-- MATLAB/Simulink release and required products;
-- load and callback policy;
-- canonical schema/fingerprint versions;
-- expected analysis status, warnings, and drift fixture;
-- clean-run determinism result.
+- source model saved release and SHA-256;
+- analyzer and extractor versions;
+- MATLAB/Simulink release and licensed products;
+- callback, custom-code, and dependency policy;
+- expected analysis status and warnings;
+- repeated-run determinism evidence.
 
-See [Security](security.md) for the full threat model.
+A missing product, dependency, or license must produce `partial`, `unsupported`, or `failed`, never an empty `complete` result.

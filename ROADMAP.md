@@ -2,13 +2,13 @@
 
 The roadmap describes direction, not a delivery commitment. Compatibility claims require fixtures and test evidence.
 
-## Now: distributable comparison foundation
+## Now: PR-native analysis product
 
-- Stabilize canonical and drift contracts through real integrations.
-- Publish versioned Python packages and composite-action releases.
-- Expand deterministic fixtures, rule examples, and SARIF compatibility coverage.
-- Document supported runner and extractor configurations.
-- Define the default product narrative around deterministic canonical comparison alongside clear security boundaries.
+- Release the `v0.3.0` PR command, composite action, and reusable workflow as one compatible contract.
+- Discover changed models from base/head refs and emit aggregate plus per-model evidence.
+- Keep fork PR analysis on GitHub-hosted runners with read-only permissions.
+- Stabilize aggregate index, Markdown, and SARIF contracts through real integrations.
+- Expand include-glob, rename, deletion, multi-model, and SARIF fixtures.
 
 ## Next: supported semantic adapters
 
@@ -20,8 +20,8 @@ The roadmap describes direction, not a delivery commitment. Compatibility claims
 
 ## Enterprise adoption path
 
-- Standardize on canonical manifests for GitHub-hosted or self-hosted review workflows.
-- Gate model changes with deterministic policy evaluation and review artifacts.
+- Standardize on automatic PR drift analysis with canonical manifests as the durable semantic contract.
+- Gate model changes with deterministic policy evaluation, job summaries, and retained artifacts.
 - Add release evidence packages for architecture and safety review.
 - Introduce optional MathWorks semantic extraction only for teams with a licensed and isolated runner model.
 - Document support expectations, compatibility evidence, and review workflows for regulated product environments.

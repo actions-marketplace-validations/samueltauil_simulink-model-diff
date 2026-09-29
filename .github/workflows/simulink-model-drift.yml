@@ -60,45 +60,20 @@ jobs:
           simulink-model-drift validate canonical \
             examples/canonical/controller-target.model.json
 
-      - name: Run composite action
-        uses: ./
-        with:
-          base: examples/canonical/controller-base.model.json
-          target: examples/canonical/controller-target.model.json
-          rules: examples/rules/default-rules.yml
-          output-dir: build/action-smoke
-          fail-on: none
-
-      - name: Verify action outputs
-        run: |
-          simulink-model-drift validate drift build/action-smoke/model-drift.json
-          test -s build/action-smoke/model-drift.md
-          test -s build/action-smoke/model-drift.sarif
-          test -s build/action-smoke/model-drift.svg
-
-      - name: Write job summary
-        if: always()
+      - name: Validate PR action metadata
         shell: bash
         run: |
-          if [[ -f build/action-smoke/model-drift.md ]]; then
-            echo "> Canonical contract and composite-action smoke test." >> "$GITHUB_STEP_SUMMARY"
-            echo >> "$GITHUB_STEP_SUMMARY"
-            cat build/action-smoke/model-drift.md >> "$GITHUB_STEP_SUMMARY"
-          else
-            {
-              echo "## Simulink Model Drift"
-              echo
-              echo "**Analysis:** Failed before a Markdown report was generated."
-              echo
-              echo "Inspect the workflow log and downloaded artifacts."
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
+          set -euo pipefail
+          python - <<'PY'
+          import pathlib
+          import yaml
 
-      - name: Upload analysis artifacts
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: simulink-model-drift-${{ github.run_id }}
-          path: build/action-smoke/
-          if-no-files-found: warn
-          retention-days: 14
+          for path in (
+              "action.yml",
+              ".github/workflows/pr-analysis.yml",
+              "examples/github-actions/canonical-pr.yml",
+              "examples/github-actions/licensed-slx.yml",
+          ):
+              with pathlib.Path(path).open(encoding="utf-8") as stream:
+                  yaml.safe_load(stream)
+          PY

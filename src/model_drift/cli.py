@@ -6,6 +6,7 @@ import argparse
 import importlib.metadata
 import json
 import os
+import re
 import shlex
 import shutil
 import sys
@@ -29,6 +30,12 @@ from model_drift.config import (
     load_plan,
 )
 from model_drift.extract import ExternalCommandExtractor, inspect_slx_package
+from model_drift.pr import (
+    DEFAULT_INCLUDES,
+    PullRequestAnalysisError,
+    PullRequestOptions,
+    analyze_pull_request,
+)
 from model_drift.reporters import render_markdown, render_sarif, render_svg
 from model_drift.rules import RuleConfigError, evaluate_rules, load_rules
 from model_drift.serialization import canonical_json_text, fingerprint_json, to_json_value
@@ -132,6 +139,33 @@ def _parser() -> argparse.ArgumentParser:
         help="Command that emits canonical JSON for each .slx input; use {artifact}.",
     )
 
+    pr = commands.add_parser(
+        "pr",
+        help="analyze changed Simulink models between two git refs",
+    )
+    pr.add_argument("repository", type=Path, nargs="?", default=Path("."))
+    pr.add_argument("--base-ref", required=True)
+    pr.add_argument("--head-ref", default="HEAD")
+    pr.add_argument("--rules", type=Path, action="append")
+    pr.add_argument("--output", type=Path, required=True)
+    pr.add_argument(
+        "--extractor-command",
+        type=str,
+        help="Command that emits canonical JSON for each model input; use {artifact}.",
+    )
+    pr.add_argument(
+        "--include",
+        action="append",
+        dest="includes",
+        help="Repository-relative model glob; repeatable (defaults to **/*.slx and **/*.mdl).",
+    )
+    pr.add_argument(
+        "--fail-on",
+        choices=("none", "warning", "error"),
+        default=None,
+        help="return a policy failure exit code at or above this level",
+    )
+
     inspect = commands.add_parser(
         "inspect-slx",
         help="emit bounded ZIP/OPC diagnostics without claiming semantic extraction",
@@ -176,12 +210,23 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         if args.command == "analyze":
             return _analyze(args)
+        if args.command == "pr":
+            return _pr(args)
         return _compare(args)
     except CliError as exc:
         _print_diagnostic(exc, diagnostic_format)
         return exc.exit_code
     except (ConfigError, RuleConfigError) as exc:
         error = CliError(str(exc), "CONFIG_INVALID")
+        _print_diagnostic(error, diagnostic_format)
+        return error.exit_code
+    except PullRequestAnalysisError as exc:
+        error = CliError(
+            exc.message,
+            exc.diagnostic_code,
+            ExitCode(exc.exit_code),
+            exc.context,
+        )
         _print_diagnostic(error, diagnostic_format)
         return error.exit_code
     except (OSError, json.JSONDecodeError) as exc:
@@ -394,6 +439,48 @@ def _analyze(args: argparse.Namespace) -> int:
                 context,
             ) from exc
     return max(statuses, key=_exit_priority)
+
+
+def _pr(args: argparse.Namespace) -> int:
+    config = load_config(
+        discover_config(None, cwd=args.repository),
+        base_dir=args.repository,
+    )
+    includes = tuple(args.includes or DEFAULT_INCLUDES)
+    for pattern in includes:
+        normalized = pattern.replace("\\", "/")
+        if (
+            not normalized
+            or normalized.startswith("/")
+            or re.match(r"^[A-Za-z]:/", normalized)
+            or ".." in normalized.split("/")
+        ):
+            raise CliError(
+                f"include glob must be repository-relative and non-traversing: {pattern!r}",
+                "PR_INCLUDE_UNSAFE",
+            )
+    rules = tuple(args.rules or config.policy.rules)
+    if not rules:
+        rules = (_default_rules_path(),)
+    command_text = (
+        args.extractor_command
+        or os.environ.get("SIMULINK_DIFF_COMMAND")
+        or config.extractor.command
+    )
+    command = tuple(_split_command(command_text)) if command_text else ()
+    return analyze_pull_request(
+        PullRequestOptions(
+            repository=args.repository,
+            base_ref=args.base_ref,
+            head_ref=args.head_ref,
+            includes=includes,
+            rules=rules,
+            output=args.output,
+            extractor_command=command,
+            timeout_seconds=config.extractor.timeout_seconds,
+            fail_on=args.fail_on or config.policy.fail_on,
+        )
+    )
 
 
 def _analyze_pair(

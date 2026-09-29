@@ -7,8 +7,9 @@ Use GitHub Discussions when enabled for setup questions, integration design, and
 Include:
 
 - project and Python versions;
+- action or reusable-workflow release and pull-request event type;
 - operating system and runner type;
-- the exact command or action inputs;
+- the exact command, include globs, refs, or action inputs;
 - exit code and sanitized logs;
 - whether inputs are canonical JSON or `.slx`;
 - extractor name, MATLAB/Simulink releases, required products, and `analysis.status`;
@@ -18,6 +19,6 @@ Do not attach proprietary models, credentials, license files, private runner det
 
 ## Support boundaries
 
-Community support covers the Python package, schemas, comparison engine, rules, reporters, and composite action. MATLAB, Simulink, license servers, self-hosted runner administration, and third-party semantic extractors are supported by their respective providers or maintainers.
+Community support covers the Python package, schemas, comparison engine, rules, reporters, composite action, and reusable workflow. MATLAB, Simulink, license servers, self-hosted runner administration, and third-party semantic extractors are supported by their respective providers or maintainers.
 
 `inspect-slx` is package diagnostics, not semantic extraction. A result from that command cannot establish model equivalence.

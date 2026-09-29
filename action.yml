@@ -1,23 +1,33 @@
-name: Simulink Model Drift
-description: Compare canonical Simulink model manifests or invoke a configured semantic extractor.
+name: Simulink Model Drift PR Analysis
+description: Analyze Simulink model drift across a pull request and publish a reviewer summary.
 author: Simulink Model Drift Analyzer contributors
 
 branding:
-  icon: git-compare
+  icon: git-pull-request
   color: blue
 
 inputs:
-  base:
-    description: Base canonical manifest or .slx artifact, relative to the caller workspace.
-    required: true
-  target:
-    description: Target canonical manifest or .slx artifact, relative to the caller workspace.
-    required: true
+  base-ref:
+    description: Base commit SHA or ref. Defaults to the pull request base SHA.
+    required: false
+    default: ""
+  head-ref:
+    description: Head commit SHA or ref. Defaults to the pull request head SHA.
+    required: false
+    default: ""
+  include:
+    description: Comma- or newline-separated repository-relative model globs.
+    required: false
+    default: |
+      **/*.slx
+      **/*.mdl
+      **/*.model.json
   rules:
-    description: Rules YAML path, relative to the caller workspace.
-    required: true
-  output-dir:
-    description: Directory for deterministic JSON, Markdown, SARIF, and SVG reports.
+    description: Repository-relative rules YAML path.
+    required: false
+    default: model-drift/rules/default-rules.yml
+  output:
+    description: Directory for aggregate and per-model reports.
     required: false
     default: build/model-drift
   fail-on:
@@ -26,8 +36,8 @@ inputs:
     default: error
   extractor-command:
     description: >-
-      Command that emits one canonical manifest on stdout for each .slx input.
-      Use {artifact} as the path placeholder. Required only for .slx inputs.
+      Optional command that emits one canonical manifest for each model artifact.
+      Use {artifact} as the path placeholder. Never expose secrets to untrusted models.
     required: false
     default: ""
   python-version:
@@ -36,24 +46,21 @@ inputs:
     default: "3.12"
 
 outputs:
-  drift-json:
-    description: Path to the complete drift manifest.
-    value: ${{ steps.analyze.outputs.drift-json }}
-  markdown:
-    description: Path to the reviewer-friendly Markdown report.
-    value: ${{ steps.analyze.outputs.markdown }}
+  output:
+    description: Directory containing aggregate and per-model reports.
+    value: ${{ steps.pr.outputs.output }}
+  index-json:
+    description: Path to model-drift-index.json.
+    value: ${{ steps.pr.outputs['index-json'] }}
+  summary-markdown:
+    description: Path to model-drift-summary.md.
+    value: ${{ steps.pr.outputs['summary-markdown'] }}
   sarif:
-    description: Path to the actionable SARIF report.
-    value: ${{ steps.analyze.outputs.sarif }}
-  svg:
-    description: Path to the deterministic SVG summary.
-    value: ${{ steps.analyze.outputs.svg }}
-  drift-sha256:
-    description: SHA-256 of the generated drift manifest.
-    value: ${{ steps.analyze.outputs.drift-sha256 }}
+    description: Path to model-drift.sarif.
+    value: ${{ steps.pr.outputs.sarif }}
   exit-code:
-    description: Analyzer exit code; see docs/cli.md for the stable exit-code contract.
-    value: ${{ steps.analyze.outputs.exit-code }}
+    description: Analyzer exit code; see docs/cli.md.
+    value: ${{ steps.pr.outputs['exit-code'] }}
 
 runs:
   using: composite
@@ -71,18 +78,31 @@ runs:
         set -euo pipefail
         python -m pip install --disable-pip-version-check "$ACTION_PATH"
 
-    - name: Analyze model drift
-      id: analyze
+    - name: Analyze pull request model drift
+      id: pr
       shell: bash
       env:
-        INPUT_BASE: ${{ inputs.base }}
-        INPUT_TARGET: ${{ inputs.target }}
+        INPUT_BASE_REF: ${{ inputs['base-ref'] }}
+        INPUT_HEAD_REF: ${{ inputs['head-ref'] }}
+        INPUT_INCLUDE: ${{ inputs.include }}
         INPUT_RULES: ${{ inputs.rules }}
-        INPUT_OUTPUT_DIR: ${{ inputs.output-dir }}
-        INPUT_FAIL_ON: ${{ inputs.fail-on }}
-        INPUT_EXTRACTOR_COMMAND: ${{ inputs.extractor-command }}
+        INPUT_OUTPUT: ${{ inputs.output }}
+        INPUT_FAIL_ON: ${{ inputs['fail-on'] }}
+        INPUT_EXTRACTOR_COMMAND: ${{ inputs['extractor-command'] }}
+        EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        EVENT_BEFORE_SHA: ${{ github.event.before }}
+        EVENT_SHA: ${{ github.sha }}
       run: |
         set -uo pipefail
+
+        base_ref="${INPUT_BASE_REF:-${EVENT_BASE_SHA:-${EVENT_BEFORE_SHA:-}}}"
+        head_ref="${INPUT_HEAD_REF:-${EVENT_HEAD_SHA:-${EVENT_SHA:-}}}"
+
+        if [[ -z "$base_ref" || -z "$head_ref" ]]; then
+          echo "base-ref and head-ref are required outside a pull_request or push context." >&2
+          exit 2
+        fi
 
         case "$INPUT_FAIL_ON" in
           none|warning|error) ;;
@@ -93,13 +113,20 @@ runs:
         esac
 
         command=(
-          simulink-model-drift analyze
-          --base "$INPUT_BASE"
-          --target "$INPUT_TARGET"
-          --output "$INPUT_OUTPUT_DIR"
+          simulink-model-drift pr
+          --base-ref "$base_ref"
+          --head-ref "$head_ref"
+          --rules "$INPUT_RULES"
+          --output "$INPUT_OUTPUT"
           --fail-on "$INPUT_FAIL_ON"
         )
-        command+=(--rules "$INPUT_RULES")
+
+        while IFS= read -r pattern; do
+          pattern="${pattern#"${pattern%%[![:space:]]*}"}"
+          pattern="${pattern%"${pattern##*[![:space:]]}"}"
+          [[ -n "$pattern" ]] && command+=(--include "$pattern")
+        done < <(printf '%s\n' "$INPUT_INCLUDE" | tr ',' '\n')
+
         if [[ -n "$INPUT_EXTRACTOR_COMMAND" ]]; then
           command+=(--extractor-command "$INPUT_EXTRACTOR_COMMAND")
         fi
@@ -109,26 +136,30 @@ runs:
         status=$?
         set -e
 
+        index_json="$INPUT_OUTPUT/model-drift-index.json"
+        summary_markdown="$INPUT_OUTPUT/model-drift-summary.md"
+        sarif="$INPUT_OUTPUT/model-drift.sarif"
+
         {
-          echo "drift-json=$INPUT_OUTPUT_DIR/model-drift.json"
-          echo "markdown=$INPUT_OUTPUT_DIR/model-drift.md"
-          echo "sarif=$INPUT_OUTPUT_DIR/model-drift.sarif"
-          echo "svg=$INPUT_OUTPUT_DIR/model-drift.svg"
+          echo "output=$INPUT_OUTPUT"
+          [[ -f "$index_json" ]] && echo "index-json=$index_json" || echo "index-json="
+          [[ -f "$summary_markdown" ]] && echo "summary-markdown=$summary_markdown" || echo "summary-markdown="
+          [[ -f "$sarif" ]] && echo "sarif=$sarif" || echo "sarif="
           echo "exit-code=$status"
         } >> "$GITHUB_OUTPUT"
 
-        if [[ -f "$INPUT_OUTPUT_DIR/model-drift.json" ]]; then
-          python - "$INPUT_OUTPUT_DIR/model-drift.json" "$GITHUB_OUTPUT" <<'PY'
-        import hashlib
-        import pathlib
-        import sys
-
-        report = pathlib.Path(sys.argv[1])
-        output = pathlib.Path(sys.argv[2])
-        digest = hashlib.sha256(report.read_bytes()).hexdigest()
-        with output.open("a", encoding="utf-8") as stream:
-            stream.write(f"drift-sha256={digest}\n")
-        PY
+        if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+          if [[ -s "$summary_markdown" ]]; then
+            cat "$summary_markdown" >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "## Simulink Model Drift"
+              echo
+              echo "No aggregate Markdown report was generated."
+              echo
+              echo "Analyzer exit code: \`$status\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
         fi
 
         exit "$status"

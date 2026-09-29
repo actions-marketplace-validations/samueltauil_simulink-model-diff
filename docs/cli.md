@@ -1,5 +1,29 @@
 # Python CLI and configuration
 
+## PR analysis
+
+The primary command for repository automation is:
+
+```bash
+simulink-model-drift pr \
+  --base-ref <sha> \
+  --head-ref <sha> \
+  --rules <path> \
+  --output <dir> \
+  --include "models/**/*.slx" \
+  --fail-on error
+```
+
+Repeat `--include` for additional globs. Add `--extractor-command` for model
+artifacts that require a reviewed canonical extractor. The command writes
+`model-drift-index.json`, `model-drift-summary.md`, `model-drift.sarif`, and
+per-model reports beneath the output directory.
+
+The GitHub Action supplies PR refs from the event when its ref inputs are
+empty. Direct CLI callers must provide both refs.
+
+## Lower-level pair analysis
+
 `simulink-model-drift analyze` automatically loads `model-drift/config.yml`
 from the current working directory. `--config PATH` selects another file.
 Command-line options override configuration, and the
