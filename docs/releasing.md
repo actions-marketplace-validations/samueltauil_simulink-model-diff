@@ -23,7 +23,7 @@ Releases distribute the Python package, root composite action, and reusable PR w
    ```
 
 4. Install the built wheel in a clean environment and run the canonical example.
-5. Validate `action.yml`, the reusable workflow, and consumer examples.
+5. Validate `action.yml`, the reusable workflow, and consumer samples.
 6. Confirm documentation and example links resolve.
 
 ## Publish
@@ -32,7 +32,7 @@ Create and push a signed `vX.Y.Z` tag whose version exactly matches `pyproject.t
 
 The workflow does not publish to PyPI. Add a separate trusted-publishing job only after the project name, publisher, environment protection, and ownership are configured.
 
-For action consumers, publish immutable patch releases. The PR-native action contract first ships as `v0.3.0`; examples and consumers should pin that exact release or its full commit SHA. Introduce a movable compatibility tag only with an explicit compatibility policy.
+For action consumers, publish immutable patch releases. The PR-native action contract first ships as `v0.3.0`; sample workflows and consumers should pin that exact release or its full commit SHA. Introduce a movable compatibility tag only with an explicit compatibility policy.
 
 ## Compatibility
 

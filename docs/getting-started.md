@@ -2,7 +2,7 @@
 
 ## 1. Add the pull-request workflow
 
-Copy [`examples/github-actions/canonical-pr.yml`](../examples/github-actions/canonical-pr.yml) to `.github/workflows/simulink-model-drift.yml`. Adjust `include` and `rules` for the repository, then pin the workflow to the reviewed release or commit SHA.
+Copy [`samples/github-actions/canonical-pr.yml`](../samples/github-actions/canonical-pr.yml) to `.github/workflows/simulink-model-drift.yml`. Adjust `include` and `rules` for the repository, then pin the workflow to the reviewed release or commit SHA.
 
 The workflow runs on `pull_request`, discovers changed models between the event's base and head SHAs, writes an aggregate job summary, and retains the complete report directory.
 
@@ -73,7 +73,7 @@ The PR event supplies refs automatically. Pass `base-ref` and `head-ref` for `wo
 
 ## Licensed `.slx` analysis
 
-Do not send fork PR content to a licensed self-hosted runner. Use a separate manual or environment-approved workflow for trusted refs, such as [`examples/github-actions/licensed-slx.yml`](../examples/github-actions/licensed-slx.yml). Qualify the extractor against the required MATLAB/Simulink releases and model dependencies before treating results as complete.
+Do not send fork PR content to a licensed self-hosted runner. Use a separate manual or environment-approved workflow for trusted refs, such as [`samples/github-actions/licensed-slx.yml`](../samples/github-actions/licensed-slx.yml). Qualify the extractor against the required MATLAB/Simulink releases and model dependencies before treating results as complete.
 
 ## Lower-level CLI
 

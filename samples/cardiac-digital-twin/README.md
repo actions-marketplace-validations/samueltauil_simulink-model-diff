@@ -48,7 +48,7 @@ project.
 simulink-model-drift compare \
   --base samples/cardiac-digital-twin/baseline.model.json \
   --target samples/cardiac-digital-twin/dose-60mg.model.json \
-  --rules examples/rules/default-rules.yml \
+  --rules samples/rules/default-rules.yml \
   --output build/cardiac-digital-twin \
   --fail-on none
 ```

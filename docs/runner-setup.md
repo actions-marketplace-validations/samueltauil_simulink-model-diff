@@ -31,7 +31,7 @@ Use a separate `workflow_dispatch` or environment-approved workflow for trusted 
 - size, time, memory, and generated-file limits;
 - sanitized logs and artifacts.
 
-The example [`licensed-slx.yml`](../examples/github-actions/licensed-slx.yml) uses a protected environment and dedicated labels. Adapt it only after validating how the selected extractor loads models.
+The example [`licensed-slx.yml`](../samples/github-actions/licensed-slx.yml) uses a protected environment and dedicated labels. Adapt it only after validating how the selected extractor loads models.
 
 ## Compatibility evidence
 

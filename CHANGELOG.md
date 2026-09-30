@@ -8,7 +8,7 @@ All notable user-visible changes are documented here. The project follows Semant
 
 - PR-native composite action around `simulink-model-drift pr`, with GitHub-context ref defaults, include globs, aggregate report outputs, and automatic job-summary rendering.
 - Reusable `workflow_call` PR analysis workflow with full-history checkout, report artifact upload, and a separately permissioned, fork-safe optional SARIF job.
-- Minimal consumer and manually approved licensed-runner examples.
+- Minimal consumer and manually approved licensed-runner samples.
 - Project-scoped GitHub Copilot app canvas extension for aggregate PR indexes and
   individual model drift reports, with model selection, color-coded
   before/after evidence, and the agent-callable `load_report`, `select_model`,
@@ -35,7 +35,7 @@ All notable user-visible changes are documented here. The project follows Semant
 ### Added
 
 - Reusable root composite action with deterministic report-path, digest, and exit-code outputs.
-- Safe canonical pull-request and gated licensed-runner workflow examples.
+- Safe canonical pull-request and gated licensed-runner workflow samples.
 - Product-grade README, roadmap, and release messaging that separate the proven canonical comparison workflow from the optional MathWorks semantic path.
 - Setup, runner, GitHub Actions, release, support, contribution, security, and roadmap documentation.
 - Issue forms and a tag-driven GitHub release workflow.
@@ -48,7 +48,7 @@ All notable user-visible changes are documented here. The project follows Semant
 - Repository CI now exercises the same composite action surface that consumers use.
 - Documentation now clearly states the supported release path, trust boundaries, adoption workflow, and honest limitations for MathWorks-backed semantic extraction.
 - Valid partial semantic extraction now produces deterministic reports and exits with the documented incomplete-analysis status instead of being rejected as an extraction failure.
-- Source distributions now include GitHub workflows, issue forms, documentation, examples, action metadata, and extractor tooling.
+- Source distributions now include GitHub workflows, issue forms, documentation, samples, action metadata, and extractor tooling.
 
 ## 0.1.0 - 2026-09-29
 
@@ -57,4 +57,4 @@ All notable user-visible changes are documented here. The project follows Semant
 - Canonical model and drift schemas.
 - Deterministic comparison, rule evaluation, JSON, Markdown, SARIF, and SVG reporting.
 - Canonical validation, fingerprinting, package diagnostics, and semantic extractor boundary.
-- Controlled canonical examples and integration tests.
+- Controlled canonical samples and integration tests.

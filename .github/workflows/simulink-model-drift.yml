@@ -7,7 +7,7 @@ on:
       - "src/**"
       - "tests/**"
       - "model-drift/**"
-      - "examples/**"
+      - "samples/**"
       - ".github/**"
       - "pyproject.toml"
       - "*.md"
@@ -56,9 +56,9 @@ jobs:
           python -m pytest
           python -m build
           simulink-model-drift validate canonical \
-            examples/canonical/controller-base.model.json
+            samples/canonical/controller-base.model.json
           simulink-model-drift validate canonical \
-            examples/canonical/controller-target.model.json
+            samples/canonical/controller-target.model.json
 
       - name: Validate PR action metadata
         shell: bash
@@ -71,8 +71,8 @@ jobs:
           for path in (
               "action.yml",
               ".github/workflows/pr-analysis.yml",
-              "examples/github-actions/canonical-pr.yml",
-              "examples/github-actions/licensed-slx.yml",
+              "samples/github-actions/canonical-pr.yml",
+              "samples/github-actions/licensed-slx.yml",
           ):
               with pathlib.Path(path).open(encoding="utf-8") as stream:
                   yaml.safe_load(stream)

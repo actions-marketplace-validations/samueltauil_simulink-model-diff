@@ -32,6 +32,6 @@ Open the Simulink Model Diff canvas for samples/cardiac-digital-twin/drift.json
 
 ## Controller
 
-The existing controller fixture under `examples/canonical/` remains the small
+The controller fixture under `canonical/` remains the small
 deterministic regression sample. It is intentionally compact; the cardiac
 sample is the richer, domain-realistic example for visual review.

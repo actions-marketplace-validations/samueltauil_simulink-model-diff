@@ -12,8 +12,8 @@ import pytest
 from model_drift.cli import ExitCode, main
 
 ROOT = Path(__file__).parents[1]
-BASE_FIXTURE = ROOT / "examples" / "canonical" / "controller-base.model.json"
-TARGET_FIXTURE = ROOT / "examples" / "canonical" / "controller-target.model.json"
+BASE_FIXTURE = ROOT / "samples" / "canonical" / "controller-base.model.json"
+TARGET_FIXTURE = ROOT / "samples" / "canonical" / "controller-target.model.json"
 
 
 def _git(repository: Path, *arguments: str) -> str:

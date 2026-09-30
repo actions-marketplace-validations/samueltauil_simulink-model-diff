@@ -45,7 +45,7 @@ include = [
   "/src",
   "/tests",
   "/model-drift",
-  "/examples",
+  "/samples",
   "/docs",
   "/tools",
   "/action.yml",

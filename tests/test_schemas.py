@@ -89,20 +89,20 @@ def test_minimal_drift_manifest_validates() -> None:
     )
 
 
-def test_checked_in_contract_examples_validate() -> None:
+def test_checked_in_contract_samples_validate() -> None:
     root = Path(__file__).parents[1]
     canonical_validator = Draft202012Validator(_schema("canonical-model.schema.json"))
     drift_validator = Draft202012Validator(_schema("drift-manifest.schema.json"))
 
     for filename in ("controller-base.model.json", "controller-target.model.json"):
         document = json.loads(
-            (root / "examples" / "canonical" / filename).read_text(encoding="utf-8")
+            (root / "samples" / "canonical" / filename).read_text(encoding="utf-8")
         )
         canonical_validator.validate(document)
         assert document["fingerprints"] == compute_fingerprints(document)
 
     drift = json.loads(
-        (root / "examples" / "output" / "controller.drift.json").read_text(
+        (root / "samples" / "output" / "controller.drift.json").read_text(
             encoding="utf-8"
         )
     )

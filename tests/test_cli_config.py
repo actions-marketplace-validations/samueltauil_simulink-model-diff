@@ -9,9 +9,9 @@ from model_drift.cli import ExitCode, main
 from model_drift.config import ConfigError, load_config
 
 ROOT = Path(__file__).parents[1]
-BASE = ROOT / "examples" / "canonical" / "controller-base.model.json"
-TARGET = ROOT / "examples" / "canonical" / "controller-target.model.json"
-RULES = ROOT / "examples" / "rules" / "default-rules.yml"
+BASE = ROOT / "samples" / "canonical" / "controller-base.model.json"
+TARGET = ROOT / "samples" / "canonical" / "controller-target.model.json"
+RULES = ROOT / "samples" / "rules" / "default-rules.yml"
 
 
 def _write_config(path: Path, *, command: str | None = None) -> None:

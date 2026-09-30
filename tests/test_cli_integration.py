@@ -13,9 +13,9 @@ from model_drift.reporters import build_sarif
 from model_drift.rules import evaluate_rules, load_rules
 
 ROOT = Path(__file__).parents[1]
-BASE = ROOT / "examples" / "canonical" / "controller-base.model.json"
-TARGET = ROOT / "examples" / "canonical" / "controller-target.model.json"
-RULES = ROOT / "examples" / "rules" / "default-rules.yml"
+BASE = ROOT / "samples" / "canonical" / "controller-base.model.json"
+TARGET = ROOT / "samples" / "canonical" / "controller-target.model.json"
+RULES = ROOT / "samples" / "rules" / "default-rules.yml"
 
 
 def _json(path: Path) -> object:
@@ -76,7 +76,7 @@ def test_compare_cli_emits_valid_deterministic_reports_and_visual_evidence() -> 
         }
         for generated, fixture in checked_in.items():
             assert (first / generated).read_bytes() == (
-                ROOT / "examples" / "output" / fixture
+                ROOT / "samples" / "output" / fixture
             ).read_bytes()
 
         drift = _json(first / "model-drift.json")
@@ -296,7 +296,7 @@ def test_partial_slx_diagnostics_have_a_failure_exit_status() -> None:
 
 
 def test_sarif_fingerprints_ignore_changed_values() -> None:
-    drift = _json(ROOT / "examples" / "output" / "controller.drift.json")
+    drift = _json(ROOT / "samples" / "output" / "controller.drift.json")
     rules = load_rules(RULES)
     first_findings = evaluate_rules(drift, rules)
     changed = deepcopy(drift)

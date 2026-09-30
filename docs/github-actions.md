@@ -122,7 +122,7 @@ The reusable workflow implements these defaults. A repository may add a separate
 
 The reusable PR workflow runs on `ubuntu-latest` and is not a licensed MATLAB execution boundary. Do not change it to a privileged self-hosted runner for automatic PR events.
 
-Use [`licensed-slx.yml`](../examples/github-actions/licensed-slx.yml) as the starting point for a manually dispatched, environment-approved analysis of trusted refs. See [Runner setup](runner-setup.md).
+Use [`licensed-slx.yml`](../samples/github-actions/licensed-slx.yml) as the starting point for a manually dispatched, environment-approved analysis of trusted refs. See [Runner setup](runner-setup.md).
 
 ## Release pinning
 

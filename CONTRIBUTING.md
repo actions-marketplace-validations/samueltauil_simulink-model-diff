@@ -17,7 +17,7 @@ python -m ruff check .
 python -m build
 ```
 
-Before opening a pull request, regenerate any affected examples with the documented CLI, run the focused tests, then run the full commands above. Do not hand-edit generated JSON, Markdown, SARIF, or SVG evidence.
+Before opening a pull request, regenerate any affected samples with the documented CLI, run the focused tests, then run the full commands above. Do not hand-edit generated JSON, Markdown, SARIF, or SVG evidence.
 
 ## Design rules
 

@@ -15,7 +15,7 @@ The roadmap describes direction, not a delivery commitment. Compatibility claims
 - Reference adapter using supported MathWorks APIs.
 - Release/product compatibility matrix with complete, partial, unsupported, and failed fixtures.
 - Explicit callback, dependency, referenced-model, library, dictionary, and Stateflow handling.
-- Hardened ephemeral-runner examples for licensed environments.
+- Hardened ephemeral-runner samples for licensed environments.
 - Validate the optional semantic path against enterprise trust, license, and isolation requirements before advertising it as a broad support commitment.
 
 ## Enterprise adoption path

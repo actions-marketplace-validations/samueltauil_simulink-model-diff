@@ -82,7 +82,7 @@ troubleshooting.
 
 ## Adopt in one workflow
 
-Copy [the minimal consumer workflow](examples/github-actions/canonical-pr.yml) into `.github/workflows/simulink-model-drift.yml`:
+Copy [the minimal consumer workflow](samples/github-actions/canonical-pr.yml) into `.github/workflows/simulink-model-drift.yml`:
 
 ```yaml
 name: Simulink model drift
@@ -161,7 +161,7 @@ See [GitHub Actions integration](docs/github-actions.md) for every input, output
 
 The public PR workflow does not include MATLAB or Simulink. A semantic extractor may require licensed MathWorks products, proprietary dependencies, and model-controlled execution such as callbacks or custom code.
 
-Use [the licensed runner example](examples/github-actions/licensed-slx.yml) only as a manually dispatched, environment-approved workflow on an ephemeral, dedicated runner. It must not run automatically for fork PRs and must not hold deployment credentials. The checked-in extractor is a best-effort adapter and has not been qualified across MATLAB/Simulink releases in this repository.
+Use [the licensed runner example](samples/github-actions/licensed-slx.yml) only as a manually dispatched, environment-approved workflow on an ephemeral, dedicated runner. It must not run automatically for fork PRs and must not hold deployment credentials. The checked-in extractor is a best-effort adapter and has not been qualified across MATLAB/Simulink releases in this repository.
 
 ## PR command contract
 
@@ -185,9 +185,9 @@ Canonical JSON is the portable semantic contract beneath PR analysis. It is usef
 
 ```bash
 simulink-model-drift analyze \
-  --base examples/canonical/controller-base.model.json \
-  --target examples/canonical/controller-target.model.json \
-  --rules examples/rules/default-rules.yml \
+  --base samples/canonical/controller-base.model.json \
+  --target samples/canonical/controller-target.model.json \
+  --rules samples/rules/default-rules.yml \
   --output build/model-drift \
   --fail-on none
 ```
