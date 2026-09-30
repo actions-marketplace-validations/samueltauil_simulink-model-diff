@@ -18,6 +18,9 @@ All notable user-visible changes are documented here. The project follows Semant
 - Reframed the product, onboarding, architecture, security, and runner guidance around automatic pull-request model drift analysis.
 - Replaced pair-oriented action inputs and outputs with the upcoming `v0.3.0` PR contract. This is a breaking action-interface change from `v0.2.0`.
 - Updated first-party GitHub Actions dependencies to their Node.js 24-compatible v7 releases.
+- Reworked the Copilot canvas as an engineering change sheet with drafting-grid
+  typography, signal-flow topology, revision stamps, and a compact before/after
+  ledger instead of a generic dashboard layout.
 
 ## 0.2.0 - 2026-09-29
 
