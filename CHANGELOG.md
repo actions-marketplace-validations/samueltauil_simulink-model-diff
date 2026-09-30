@@ -2,7 +2,7 @@
 
 All notable user-visible changes are documented here. The project follows Semantic Versioning once public compatibility commitments are made; pre-1.0 releases may refine contracts with clear release notes.
 
-## Unreleased
+## 0.3.0 - 2026-09-29
 
 ### Added
 
@@ -17,7 +17,7 @@ All notable user-visible changes are documented here. The project follows Semant
 ### Changed
 
 - Reframed the product, onboarding, architecture, security, and runner guidance around automatic pull-request model drift analysis.
-- Replaced pair-oriented action inputs and outputs with the upcoming `v0.3.0` PR contract. This is a breaking action-interface change from `v0.2.0`.
+- Replaced pair-oriented action inputs and outputs with the published `v0.3.0` PR contract. This is a breaking action-interface change from `v0.2.0`.
 - Updated first-party GitHub Actions dependencies to their Node.js 24-compatible v7 releases.
 - Reworked the Copilot app canvas as a technical review station with a dark model
   queue, light evidence workspace, instrument-style impact map, and compact

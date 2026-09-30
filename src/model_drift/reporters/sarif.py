@@ -15,7 +15,7 @@ def build_sarif(
     findings: Sequence[Finding],
     rules: Sequence[Rule],
     *,
-    tool_version: str = "0.2.0",
+    tool_version: str = "0.3.0",
     information_uri: str = "https://github.com/github/simulink-model-drift",
 ) -> dict[str, Any]:
     rule_by_id = {rule.id: rule for rule in rules}
@@ -58,7 +58,7 @@ def render_sarif(
     findings: Sequence[Finding],
     rules: Sequence[Rule],
     *,
-    tool_version: str = "0.2.0",
+    tool_version: str = "0.3.0",
     information_uri: str = "https://github.com/github/simulink-model-drift",
 ) -> str:
     return deterministic_json(

@@ -228,9 +228,8 @@ Official MathWorks guidance describes the `.slx` file as a ZIP-based Open Packag
 ## Project status and release policy
 
 The comparison engine, reporters, Action, reusable workflow, and canvas are
-implemented. The Action contract is documented under `Unreleased`; release the
-Action and reusable workflow together as `v0.3.0` before external adoption.
-Consumers should pin an exact release or reviewed commit SHA.
+implemented. The PR-native Action contract is published as `v0.3.0`.
+Consumers should pin that release or a reviewed full commit SHA.
 
 See [Getting started](docs/getting-started.md), [GitHub Actions integration](docs/github-actions.md), [Copilot app canvas](docs/copilot-canvas.md), [Architecture](docs/architecture.md), [Security](docs/security.md), [CHANGELOG.md](CHANGELOG.md), and [ROADMAP.md](ROADMAP.md).
 

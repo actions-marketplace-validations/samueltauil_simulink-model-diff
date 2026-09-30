@@ -4,7 +4,7 @@ The roadmap describes direction, not a delivery commitment. Compatibility claims
 
 ## Now: PR-native analysis product
 
-- Release the `v0.3.0` PR command, composite action, and reusable workflow as one compatible contract.
+- Maintain the released `v0.3.0` PR command, composite action, and reusable workflow as one compatible contract.
 - Discover changed models from base/head refs and emit aggregate plus per-model evidence.
 - Keep fork PR analysis on GitHub-hosted runners with read-only permissions.
 - Stabilize aggregate index, Markdown, and SARIF contracts through real integrations.

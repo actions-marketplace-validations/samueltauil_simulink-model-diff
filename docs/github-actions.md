@@ -1,9 +1,18 @@
 # GitHub Actions integration
 
-The reusable workflow at `.github/workflows/pr-analysis.yml` is the recommended
-CI entry point. It combines the permission-free composite action with
-full-history checkout, artifact retention, and an optional separately
-permissioned SARIF upload.
+The published release is the supported integration point. Consumers reference
+the repository at a release tag; they do not copy this repository into their
+own project and they do not use a local path.
+
+There are two hosted surfaces:
+
+- the reusable workflow at
+  `samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.3.0`;
+- the composite action at `samueltauil/simulink-model-diff@v0.3.0`.
+
+Use the reusable workflow unless you need to own checkout, artifact retention,
+or surrounding workflow steps. Both references resolve to the same published
+release contract.
 
 ## Recommended consumer workflow
 
@@ -79,9 +88,36 @@ remain authoritative.
 
 See [the canvas guide](copilot-canvas.md) for the full review sequence.
 
+## Direct composite action use
+
+Use the hosted composite action when the caller needs custom workflow steps:
+
+```yaml
+- uses: actions/checkout@v7
+  with:
+    fetch-depth: 0
+    persist-credentials: false
+
+- id: drift
+  uses: samueltauil/simulink-model-diff@v0.3.0
+  with:
+    include: |
+      models/**/*.slx
+      canonical/**/*.model.json
+    rules: model-drift/rules/default-rules.yml
+    output: build/model-drift
+    fail-on: error
+```
+
+The action is downloaded by GitHub from the tagged release. The caller does
+not need to install the Python package or check out this repository. The
+checkout step above is for the consumer repository whose model history is being
+analyzed.
+
 ## Composite action inputs and outputs
 
-The root action accepts the same analysis inputs except artifact retention and SARIF upload. Its deterministic outputs are:
+The published root action accepts the same analysis inputs except artifact
+retention and SARIF upload. Its deterministic outputs are:
 
 | Output | Value |
 | --- | --- |
@@ -95,7 +131,8 @@ The action always attempts to write the aggregate Markdown to `GITHUB_STEP_SUMMA
 
 ## Checkout requirements
 
-PR analysis reads repository state at both commits. Callers using the composite action directly must use:
+PR analysis reads repository state at both commits. Callers using the published composite action directly must check out their own
+repository with:
 
 ```yaml
 - uses: actions/checkout@v7
@@ -126,4 +163,12 @@ Use [`licensed-slx.yml`](../samples/github-actions/licensed-slx.yml) as the star
 
 ## Release pinning
 
-The reusable workflow self-references the action from the same release line. Publish the action and reusable workflow together. Pin `v0.3.0` or a reviewed full commit SHA; do not mix a newer workflow contract with an older composite action.
+The reusable workflow self-references the composite action from the same
+release. The project publishes the workflow and action together. Pin
+`v0.3.0` for the supported release contract, or pin the full commit SHA for an
+immutable supply-chain reference. Do not mix a newer workflow contract with an
+older composite action.
+
+The `v0.3.0` tag is also the release boundary for the Python package,
+report schemas, action metadata, and workflow contract. Upgrade those surfaces
+together.
