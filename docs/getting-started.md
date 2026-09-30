@@ -1,6 +1,6 @@
 # Getting started
 
-## 1. Add PR analysis
+## 1. Add the pull-request workflow
 
 Copy [`examples/github-actions/canonical-pr.yml`](../examples/github-actions/canonical-pr.yml) to `.github/workflows/simulink-model-drift.yml`. Adjust `include` and `rules` for the repository, then pin the workflow to the reviewed release or commit SHA.
 
@@ -10,7 +10,7 @@ The workflow runs on `pull_request`, discovers changed models between the event'
 
 Start with `model-drift/rules/default-rules.yml` or provide another repository-relative YAML file. `fail-on: error` blocks only error findings; `warning` blocks warning and error findings; `none` reports without enforcing.
 
-## 3. Review outputs
+## 3. Check the Action result
 
 | File | Purpose |
 | --- | --- |
@@ -20,6 +20,33 @@ Start with `model-drift/rules/default-rules.yml` or provide another repository-r
 | per-model report directories | Detailed evidence for each changed model |
 
 Artifacts are uploaded even when policy fails. SARIF is optional and is skipped for fork PRs.
+
+The policy result answers whether the pull request meets the configured rules.
+It does not replace engineering review of the model change.
+
+## 4. Open the report in Copilot
+
+Download the artifact from the workflow run into the repository checkout. The
+reusable workflow names it `simulink-model-drift-<run-id>`.
+
+```bash
+gh run download <run-id> \
+  --name simulink-model-drift-<run-id> \
+  --dir build/model-drift
+```
+
+Open Copilot CLI from the repository root and request the project canvas:
+
+```text
+Open the Simulink Model Diff canvas for build/model-drift/model-drift-index.json
+```
+
+The canvas checks analysis completeness before presenting the recorded model
+scope and element-level evidence. Use its merge assessment as review guidance,
+not as a replacement for the Action check or branch protection.
+
+Reports generated locally can be opened from the same default path without the
+download step.
 
 ## Direct action use
 

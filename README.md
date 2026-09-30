@@ -1,50 +1,77 @@
 # Simulink Model Drift
 
-Simulink Model Drift is a PR-native GitHub Action for reviewing model changes before merge. It discovers changed models between the pull request base and head commits, evaluates configured rules, and publishes one aggregate review summary plus downloadable evidence for every analyzed model.
+Simulink Model Drift does two things:
 
-The default product experience is automatic pull-request analysis. Canonical manifests and the Python CLI remain supported lower-level interfaces for teams that need custom pipelines or non-GitHub execution.
+| Part | Runs where | Purpose |
+| --- | --- | --- |
+| GitHub Action | Pull-request CI | Find changed models, compare base and head, evaluate policy, and publish deterministic reports |
+| GitHub Copilot canvas | Copilot CLI in the checked-out repository | Turn the report into an interactive model review before the pull request is approved |
 
-## What reviewers get
+The Action produces the evidence. The canvas reads the same JSON reports for
+human review.
 
-Every run writes:
+```mermaid
+flowchart LR
+    PR[Pull request] --> A[Model drift Action]
+    A --> S[Job summary]
+    A --> P[Policy check]
+    A --> R[Report artifact]
+    R --> C[Copilot review canvas]
+    C --> H[Human review]
+    P --> D[Pull-request decision]
+    H --> D
+```
 
-- `model-drift-index.json`: machine-readable aggregate status and per-model report index;
-- `model-drift-summary.md`: aggregate Markdown written to the GitHub job summary;
-- `model-drift.sarif`: aggregate policy findings for optional code-scanning upload;
-- per-model reports beneath the configured output directory.
+## 1. Analyze the pull request
 
-The analyzer reports added, removed, modified, moved, and unresolved model elements. Policy findings can fail the PR at `warning` or `error` severity while reports remain available as workflow artifacts.
+The Action compares the pull request base and head commits. It discovers added,
+modified, deleted, and renamed model files, runs the configured semantic
+extractor, compares canonical model manifests, and applies repository rules.
 
-## Copilot visual diff canvas
+Each run produces:
 
-This repository includes a project-scoped GitHub Copilot CLI canvas extension in
-`.github/extensions/simulink-model-diff-canvas`. When the repository is open in
-Copilot CLI, ask Copilot to open the **Simulink Model Diff** canvas with either
-an aggregate PR index or an individual drift report:
+| File | Purpose |
+| --- | --- |
+| `model-drift-index.json` | Aggregate status and links to every changed model |
+| `model-drift-summary.md` | Pull-request summary written to the Actions job |
+| `model-drift.sarif` | Optional code-scanning findings |
+| `models/*/model-drift.json` | Element-level drift for one model |
+| `models/*/model-drift.md` | Human-readable report for one model |
+| `models/*/model-drift.svg` | Portable visual summary |
+
+`fail-on` controls the policy threshold. Reports are still uploaded when the
+Action fails, so reviewers can see why the check was blocked.
+
+## 2. Review the report in Copilot
+
+The project-scoped extension at
+`.github/extensions/simulink-model-diff-canvas/extension.mjs` registers the
+**Simulink Model Diff** canvas in GitHub Copilot CLI.
+
+Open a report generated in the current checkout:
 
 ```text
 Open the Simulink Model Diff canvas for build/model-drift/model-drift-index.json
 ```
 
-The canvas is the human-review step between CI analysis and pull-request
-approval. It guides reviewers through four stages:
+The canvas follows the review sequence used before approving a model change:
 
-1. check whether the analysis is complete enough to trust;
-2. establish the affected model paths and topology;
-3. inspect filterable before/after evidence;
-4. read a merge assessment derived from analysis completeness, policy status,
-   and the recorded drift.
+1. **Trust** checks whether extraction was complete, partial, unsupported, or
+   failed.
+2. **Scope** identifies affected models, paths, blocks, and declared
+   connections.
+3. **Evidence** provides filters and before/after values for each recorded
+   revision.
+4. **Decision** explains whether the report needs model-owner review, policy
+   remediation, or a qualified extraction run.
 
-The assessment does not approve a pull request or replace repository policy.
-For example, a `partial` cardiac sample asks for qualified extraction instead
-of presenting the visible parameter change as merge-ready. The canvas consumes
-the deterministic JSON artifacts produced by this tool; it does not load or
-execute the `.slx` file and does not reproduce the native Simulink editor.
+The canvas does not approve the pull request, change a check result, or execute
+the `.slx` file. Branch protection and the Action's policy result remain
+authoritative.
 
-The default report path is `build/model-drift/model-drift-index.json`. The
-canvas also accepts a lower-level report such as
-`examples/output/controller.drift.json`. Report paths are restricted to the
-active workspace, and the local renderer binds only to loopback.
+The canvas accepts an aggregate `model-drift-index.json`, a per-model
+`model-drift.json`, or a canonical model snapshot. Paths must remain inside the
+active workspace. The renderer runs on a loopback-only local server.
 
 ## Adopt in one workflow
 
@@ -170,7 +197,7 @@ baseline/target snapshots for the documented 50 mg → 60 mg beta-blocker
 scenario. The sample is intentionally marked `partial` until a licensed
 Simulink extractor qualifies the generated `.slx` artifact.
 
-The sample also powers the Copilot canvas design showcase:
+Open the sample directly in the Copilot canvas:
 
 ```text
 Open the Simulink Model Diff canvas for samples/cardiac-digital-twin/drift.json
@@ -193,7 +220,10 @@ Official MathWorks guidance describes the `.slx` file as a ZIP-based Open Packag
 
 ## Project status and release policy
 
-The canonical comparison engine and deterministic reporters are implemented. The PR-native action and reusable workflow are the next public action contract and are documented under `Unreleased`; release them together as `v0.3.0` before external adoption. Consumers should pin an exact release or reviewed commit SHA.
+The comparison engine, reporters, Action, reusable workflow, and canvas are
+implemented. The Action contract is documented under `Unreleased`; release the
+Action and reusable workflow together as `v0.3.0` before external adoption.
+Consumers should pin an exact release or reviewed commit SHA.
 
 See [Getting started](docs/getting-started.md), [Architecture](docs/architecture.md), [Security](docs/security.md), [CHANGELOG.md](CHANGELOG.md), and [ROADMAP.md](ROADMAP.md).
 

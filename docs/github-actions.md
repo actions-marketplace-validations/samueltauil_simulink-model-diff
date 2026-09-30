@@ -1,6 +1,9 @@
 # GitHub Actions integration
 
-The primary product surface is the reusable PR workflow at `.github/workflows/pr-analysis.yml`. It combines the permission-free composite action with full-history checkout, artifact retention, and an optional separately permissioned SARIF upload.
+The reusable workflow at `.github/workflows/pr-analysis.yml` is the recommended
+CI entry point. It combines the permission-free composite action with
+full-history checkout, artifact retention, and an optional separately
+permissioned SARIF upload.
 
 ## Recommended consumer workflow
 
@@ -52,27 +55,27 @@ The workflow outputs `output`, `index-json`, `summary-markdown`, `sarif`, and `e
 
 ## Review the artifact in Copilot
 
-The reusable workflow produces evidence; it does not make the final engineering
-decision. After downloading or generating the report directory locally, open
-the aggregate index in Copilot CLI:
+The reusable workflow uploads an artifact named
+`simulink-model-drift-<run-id>`. Download it into a checkout of the pull
+request:
+
+```bash
+gh run download <run-id> \
+  --name simulink-model-drift-<run-id> \
+  --dir build/model-drift
+```
+
+Then open the aggregate index in Copilot CLI:
 
 ```text
 Open the Simulink Model Diff canvas for build/model-drift/model-drift-index.json
 ```
 
-The canvas is intended for the review phase after CI and before pull-request
-approval. Its trust, scope, evidence, and decision stages help a reviewer:
+The canvas reads the downloaded JSON. It does not call the Actions API, write a
+pull-request review, change a check result, or elevate permissions. GitHub
+branch protection and the configured policy threshold remain authoritative.
 
-- recognize incomplete extraction before relying on the result;
-- move between every changed model in the pull request;
-- focus the ledger by functional, interface, structural, or model-path scope;
-- compare recorded values and evidence details;
-- determine whether the next action is approval, model-owner review, policy
-  remediation, or a qualified extraction run.
-
-The canvas never writes a review, changes a check result, or elevates
-permissions. GitHub branch protection and the configured policy threshold
-remain authoritative.
+See [Getting started](getting-started.md) for the complete review sequence.
 
 ## Composite action inputs and outputs
 

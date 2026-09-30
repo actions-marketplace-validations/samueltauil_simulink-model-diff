@@ -1,6 +1,6 @@
 # Architecture
 
-## PR-native product boundary
+## Action and review flow
 
 ```mermaid
 flowchart LR
@@ -12,12 +12,26 @@ flowchart LR
     X --> M[Canonical model manifests]
     M --> D[Drift and policy evaluation]
     D --> R[Aggregate and per-model reports]
+    D --> G[Action check result]
     R --> S[Job summary]
     R --> T[Artifact upload]
     R --> U[Optional trusted SARIF job]
+    T -. download .-> V[Copilot review canvas]
+    V --> H[Human model review]
+    G --> B[Branch protection]
+    H --> Q[Pull-request decision]
+    B --> Q
 ```
 
-The reusable workflow is the recommended product entry point. It owns event-safe checkout, artifact retention, and SARIF permissions. The composite action is a permission-free adapter around the public `simulink-model-drift pr` command. The Python package owns discovery, extraction, comparison, policy, and reporting.
+The reusable workflow owns checkout, artifact retention, and SARIF permissions.
+The composite Action wraps the public `simulink-model-drift pr` command without
+requesting repository permissions. The Python package handles discovery,
+extraction, comparison, policy, and reporting.
+
+The Action check and the canvas have separate jobs. The Action enforces the
+configured policy in CI. The canvas reads the generated report after CI and
+helps a reviewer inspect the evidence. It cannot alter the check or approve the
+pull request.
 
 ## Permission separation
 
@@ -31,16 +45,24 @@ The PR command accepts base and head refs plus one or more include globs. It res
 
 The output directory contains:
 
-- a deterministic aggregate JSON index;
-- an aggregate Markdown review;
-- aggregate SARIF findings;
-- deterministic per-model reports.
+| Output | Consumer |
+| --- | --- |
+| Aggregate JSON index | Copilot canvas and other integrations |
+| Aggregate Markdown | GitHub Actions job summary |
+| Aggregate SARIF | Optional code-scanning upload |
+| Per-model JSON, Markdown, SARIF, and SVG | Review artifact |
+
+The JSON files form the handoff between automated analysis and local review.
+The canvas does not need the original `.slx` file to render an existing report.
 
 ## Semantic boundary
 
 Canonical manifests remain the semantic contract. `.slx` or `.mdl` analysis requires an extractor that emits a valid canonical manifest with explicit analysis status and source digest. Supported Simulink APIs or documented comparison evidence are preferred; undocumented SLX XML is not a semantic API.
 
-Only `complete` analysis supports a clean “no drift” conclusion. `partial`, `unsupported`, and `failed` states remain visible in aggregate and per-model reports.
+Only `complete` analysis supports a clean "no drift" conclusion. `partial`,
+`unsupported`, and `failed` states remain visible in aggregate and per-model
+reports. The canvas carries the same status into its merge assessment instead
+of treating incomplete evidence as a clean result.
 
 ## Lower-level interfaces
 
