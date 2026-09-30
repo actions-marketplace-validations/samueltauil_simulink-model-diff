@@ -25,7 +25,7 @@ on:
         description: Repository-relative rules YAML path.
         required: false
         type: string
-        default: model-drift/rules/default-rules.yml
+        default: ""
       output:
         description: Report output directory.
         required: false
@@ -95,7 +95,7 @@ jobs:
 
       - name: Analyze Simulink model drift
         id: drift
-        uses: samueltauil/simulink-model-diff@v0.3.0
+        uses: samueltauil/simulink-model-diff@v0.3.1
         with:
           base-ref: ${{ inputs['base-ref'] }}
           head-ref: ${{ inputs['head-ref'] }}

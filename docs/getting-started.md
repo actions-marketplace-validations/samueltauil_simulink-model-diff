@@ -8,7 +8,10 @@ The workflow runs on `pull_request`, discovers changed models between the event'
 
 ## 2. Add policy rules
 
-Start with `model-drift/rules/default-rules.yml` or provide another repository-relative YAML file. `fail-on: error` blocks only error findings; `warning` blocks warning and error findings; `none` reports without enforcing.
+The workflow uses the package's built-in rules by default. To apply repository
+policy, set `rules` to a YAML file that exists in the consumer repository.
+`fail-on: error` blocks only error findings; `warning` blocks warning and error
+findings; `none` reports without enforcing.
 
 ## 3. Check the Action result
 
@@ -61,10 +64,9 @@ Use the composite action when the repository needs custom surrounding steps:
     fetch-depth: 0
     persist-credentials: false
 
-- uses: samueltauil/simulink-model-diff@v0.3.0
+- uses: samueltauil/simulink-model-diff@v0.3.1
   with:
     include: models/**/*.slx
-    rules: model-drift/rules/default-rules.yml
     output: build/model-drift
     fail-on: error
 ```

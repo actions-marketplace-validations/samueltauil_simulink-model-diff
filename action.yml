@@ -25,7 +25,7 @@ inputs:
   rules:
     description: Repository-relative rules YAML path.
     required: false
-    default: model-drift/rules/default-rules.yml
+    default: ""
   output:
     description: Directory for aggregate and per-model reports.
     required: false
@@ -116,10 +116,13 @@ runs:
           simulink-model-drift pr
           --base-ref "$base_ref"
           --head-ref "$head_ref"
-          --rules "$INPUT_RULES"
           --output "$INPUT_OUTPUT"
           --fail-on "$INPUT_FAIL_ON"
         )
+
+        if [[ -n "$INPUT_RULES" ]]; then
+          command+=(--rules "$INPUT_RULES")
+        fi
 
         while IFS= read -r pattern; do
           pattern="${pattern#"${pattern%%[![:space:]]*}"}"

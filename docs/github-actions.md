@@ -7,8 +7,8 @@ own project and they do not use a local path.
 There are two hosted surfaces:
 
 - the reusable workflow at
-  `samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.3.0`;
-- the composite action at `samueltauil/simulink-model-diff@v0.3.0`.
+  `samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.3.1`;
+- the composite action at `samueltauil/simulink-model-diff@v0.3.1`.
 
 Use the reusable workflow unless you need to own checkout, artifact retention,
 or surrounding workflow steps. Both references resolve to the same published
@@ -25,7 +25,6 @@ on:
       - "**/*.slx"
       - "**/*.mdl"
       - "**/*.model.json"
-      - "model-drift/rules/**"
 
 permissions:
   contents: read
@@ -33,12 +32,11 @@ permissions:
 
 jobs:
   model-drift:
-    uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.3.0
+    uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.3.1
     with:
       include: |
         models/**/*.slx
         canonical/**/*.model.json
-      rules: model-drift/rules/default-rules.yml
       fail-on: error
       upload-sarif: true
 ```
@@ -52,7 +50,7 @@ Use `contents: read` only when `upload-sarif` is false. GitHub does not let a ca
 | `base-ref` | PR base SHA | Explicit base commit SHA or ref |
 | `head-ref` | PR head SHA | Explicit head commit SHA or ref |
 | `include` | `.slx`, `.mdl`, `.model.json` globs | Comma- or newline-separated model globs |
-| `rules` | `model-drift/rules/default-rules.yml` | Rules YAML path |
+| `rules` | empty | Optional repository-relative rules YAML path; empty uses built-in rules |
 | `output` | `build/model-drift` | Aggregate and per-model report directory |
 | `fail-on` | `error` | `none`, `warning`, or `error` |
 | `extractor-command` | empty | Optional non-privileged canonical extractor command |
@@ -61,6 +59,8 @@ Use `contents: read` only when `upload-sarif` is false. GitHub does not let a ca
 | `upload-sarif` | `false` | Upload SARIF for trusted events |
 
 The workflow outputs `output`, `index-json`, `summary-markdown`, `sarif`, and `exit-code`.
+The called workflow checks out the consumer repository, so a custom `rules`
+path must exist in that repository.
 
 ## Hand the artifact to the review canvas
 
@@ -99,12 +99,11 @@ Use the hosted composite action when the caller needs custom workflow steps:
     persist-credentials: false
 
 - id: drift
-  uses: samueltauil/simulink-model-diff@v0.3.0
+  uses: samueltauil/simulink-model-diff@v0.3.1
   with:
     include: |
       models/**/*.slx
       canonical/**/*.model.json
-    rules: model-drift/rules/default-rules.yml
     output: build/model-drift
     fail-on: error
 ```
@@ -165,10 +164,10 @@ Use [`licensed-slx.yml`](../samples/github-actions/licensed-slx.yml) as the star
 
 The reusable workflow self-references the composite action from the same
 release. The project publishes the workflow and action together. Pin
-`v0.3.0` for the supported release contract, or pin the full commit SHA for an
+`v0.3.1` for the supported release contract, or pin the full commit SHA for an
 immutable supply-chain reference. Do not mix a newer workflow contract with an
 older composite action.
 
-The `v0.3.0` tag is also the release boundary for the Python package,
+The `v0.3.1` tag is also the release boundary for the Python package,
 report schemas, action metadata, and workflow contract. Upgrade those surfaces
 together.

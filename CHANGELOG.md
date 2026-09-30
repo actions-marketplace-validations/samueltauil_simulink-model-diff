@@ -2,6 +2,14 @@
 
 All notable user-visible changes are documented here. The project follows Semantic Versioning once public compatibility commitments are made; pre-1.0 releases may refine contracts with clear release notes.
 
+## 0.3.1 - 2026-09-29
+
+### Fixed
+
+- The published reusable workflow now uses built-in policy rules when callers
+  omit `rules`. Custom rules remain supported when the path exists in the
+  consumer repository.
+
 ## 0.3.0 - 2026-09-29
 
 ### Added

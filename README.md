@@ -93,7 +93,6 @@ on:
       - "**/*.slx"
       - "**/*.mdl"
       - "**/*.model.json"
-      - "model-drift/rules/**"
 
 permissions:
   contents: read
@@ -101,12 +100,14 @@ permissions:
 
 jobs:
   model-drift:
-    uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.3.0
+    uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.3.1
     with:
-      rules: model-drift/rules/default-rules.yml
       fail-on: error
       upload-sarif: true
 ```
+
+Omit `rules` to use the package's built-in policy. If you set it, the path
+must point to a YAML file in the consumer repository.
 
 The reusable workflow:
 
@@ -143,12 +144,11 @@ Use the composite action directly when the caller needs to own checkout, artifac
     persist-credentials: false
 
 - id: drift
-  uses: samueltauil/simulink-model-diff@v0.3.0
+  uses: samueltauil/simulink-model-diff@v0.3.1
   with:
     include: |
       models/**/*.slx
       canonical/**/*.model.json
-    rules: model-drift/rules/default-rules.yml
     output: build/model-drift
     fail-on: error
 ```
@@ -171,7 +171,6 @@ The action is a distribution wrapper around:
 simulink-model-drift pr \
   --base-ref <sha> \
   --head-ref <sha> \
-  --rules model-drift/rules/default-rules.yml \
   --output build/model-drift \
   --include "models/**/*.slx" \
   --fail-on error
@@ -228,7 +227,7 @@ Official MathWorks guidance describes the `.slx` file as a ZIP-based Open Packag
 ## Project status and release policy
 
 The comparison engine, reporters, Action, reusable workflow, and canvas are
-implemented. The PR-native Action contract is published as `v0.3.0`.
+implemented. The PR-native Action contract is published as `v0.3.1`.
 Consumers should pin that release or a reviewed full commit SHA.
 
 See [Getting started](docs/getting-started.md), [GitHub Actions integration](docs/github-actions.md), [Copilot app canvas](docs/copilot-canvas.md), [Architecture](docs/architecture.md), [Security](docs/security.md), [CHANGELOG.md](CHANGELOG.md), and [ROADMAP.md](ROADMAP.md).

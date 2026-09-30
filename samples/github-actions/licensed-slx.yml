@@ -31,14 +31,13 @@ jobs:
           persist-credentials: false
 
       - name: Analyze with the reviewed licensed extractor
-        uses: samueltauil/simulink-model-diff@v0.3.0
+        uses: samueltauil/simulink-model-diff@v0.3.1
         with:
           base-ref: ${{ inputs['base-ref'] }}
           head-ref: ${{ inputs['head-ref'] }}
           include: models/**/*.slx
           extractor-command: >-
             python tools/run_matlab_extractor.py {artifact}
-          rules: model-drift/rules/default-rules.yml
           output: build/model-drift
           fail-on: error
 
