@@ -93,7 +93,6 @@ simulink-model-drift pr \
   --base-ref HEAD^ \
   --head-ref HEAD \
   --include "models/**/*.slx" \
-  --rules model-drift/rules/default-rules.yml \
   --output build/model-drift \
   --fail-on error
 ```
