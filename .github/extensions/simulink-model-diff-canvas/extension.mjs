@@ -136,6 +136,7 @@ function driftModel(id, label, drift, record = {}) {
 
 async function loadReport(workingDirectory, reportPath) {
     const { candidate } = resolveReportPath(workingDirectory, reportPath);
+    const source = relative(workingDirectory, candidate).replaceAll("\\", "/");
     const document = await readJson(candidate);
     if (Array.isArray(document.models)) {
         const models = [];
@@ -153,7 +154,7 @@ async function loadReport(workingDirectory, reportPath) {
             models.push(driftModel(String(record.id || label), String(label), drift, record));
         }
         return {
-            source: candidate,
+            source,
             kind: "aggregate",
             status: String(document.status || "unknown"),
             baseRef: document.baseRef || document.baseCommit || null,
@@ -170,7 +171,7 @@ async function loadReport(workingDirectory, reportPath) {
     ) {
         const label = String(document.model.name || candidate.split(/[\\/]/).pop());
         return {
-            source: candidate,
+            source,
             kind: "canonical",
             status: String(document.analysis?.status || "unknown"),
             baseRef: null,
@@ -199,7 +200,7 @@ async function loadReport(workingDirectory, reportPath) {
     const label =
         drift.comparison.targetArtifact || drift.comparison.baseArtifact || candidate.split(/[\\/]/).pop();
     return {
-        source: candidate,
+        source,
         kind: "single",
         status: String(drift.comparison.status || "unknown"),
         baseRef: drift.comparison.baseArtifact || null,

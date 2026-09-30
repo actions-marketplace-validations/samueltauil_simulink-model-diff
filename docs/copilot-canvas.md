@@ -33,7 +33,7 @@ This is the shortcut that makes the canvas useful in a pull request review:
    review or needs a stronger extraction first.
 
 <p align="center">
-  <img src="assets/copilot-canvas-review.svg" alt="Simulink Model Diff canvas showing extraction trust, changed models, evidence, and merge assessment" width="100%">
+  <img src="assets/copilot-canvas-review.png" alt="Live Simulink Model Diff canvas showing extraction trust, changed models, evidence, and merge assessment" width="100%">
 </p>
 
 This is the practical benefit. You are not reading a JSON dump. You are looking

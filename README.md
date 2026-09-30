@@ -114,7 +114,7 @@ status of the extraction first, then the changed models, then the before/after
 values that matter, and then a merge assessment.
 
 <p align="center">
-  <img src="docs/assets/copilot-canvas-review.svg" alt="Simulink Model Diff canvas showing extraction trust, changed models, evidence, and merge assessment" width="100%">
+  <img src="docs/assets/copilot-canvas-review.png" alt="Live Simulink Model Diff canvas showing extraction trust, changed models, evidence, and merge assessment" width="100%">
 </p>
 
 The extension is committed at
