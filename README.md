@@ -80,7 +80,7 @@ authoritative.
 See [the canvas guide](docs/copilot-canvas.md) for inputs, capabilities, and
 troubleshooting.
 
-## Adopt in one workflow
+## Add the Action to a pull request workflow
 
 Copy [the minimal consumer workflow](samples/github-actions/canonical-pr.yml) into `.github/workflows/simulink-model-drift.yml`:
 
@@ -96,29 +96,34 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   model-drift:
-    uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.3.1
-    with:
-      fail-on: error
-      upload-sarif: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: samueltauil/simulink-model-diff@v0.3.1
+        with:
+          fail-on: error
+
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: simulink-model-drift-${{ github.run_id }}
+          path: build/model-drift
 ```
 
-Omit `rules` to use the package's built-in policy. If you set it, the path
-must point to a YAML file in the consumer repository.
+The `uses: samueltauil/simulink-model-diff@v0.3.1` step is the published
+Action. GitHub downloads it from the release tag. The checkout step fetches the
+consumer repository's model history; it does not pull this repository.
 
-The reusable workflow:
-
-1. checks out complete history with `fetch-depth: 0`;
-2. derives the base and head SHAs from the pull request event;
-3. runs the composite action on a GitHub-hosted runner;
-4. writes the aggregate Markdown to `GITHUB_STEP_SUMMARY`;
-5. uploads the complete report directory even when policy fails;
-6. uploads SARIF in a separate least-privilege job only for trusted events.
-
-Pin a reviewed release commit SHA when your supply-chain policy requires an immutable reference. The reusable workflow and composite action must come from the same release.
+Omit `rules` to use the package's built-in policy. If you set it, the path must
+point to a YAML file in the consumer repository. Pin the full release commit
+SHA when your supply-chain policy requires an immutable reference.
 
 ## Fork pull-request safety
 
@@ -127,35 +132,26 @@ The supported automatic trigger is `pull_request`, never `pull_request_target`.
 - The analysis job has only `contents: read`.
 - Checkout disables persisted credentials and fetches full history so both PR commits are available.
 - Fork PRs receive no repository secrets.
-- SARIF upload is skipped for fork PRs because their token cannot safely receive `security-events: write`.
+- The optional reusable workflow skips SARIF upload for fork PRs because their
+  token cannot safely receive `security-events: write`.
 - Reports still appear in the job summary and artifact for fork PRs.
 - Automatic PR analysis runs only on a GitHub-hosted runner.
 
 Do not route untrusted fork models to a self-hosted MATLAB runner. See [Security](docs/security.md) and [Runner setup](docs/runner-setup.md).
 
-## Composite action
+## Reusable workflow wrapper
 
-Use the composite action directly when the caller needs to own checkout, artifact retention, or other workflow behavior:
+The optional reusable workflow at
+`samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.3.1`
+adds artifact retention and a separate fork-safe SARIF job around the same
+Action. This is a workflow call at the job level, not the Action installation
+syntax. See [GitHub Actions integration](docs/github-actions.md) for the
+difference.
 
-```yaml
-- uses: actions/checkout@v7
-  with:
-    fetch-depth: 0
-    persist-credentials: false
-
-- id: drift
-  uses: samueltauil/simulink-model-diff@v0.3.1
-  with:
-    include: |
-      models/**/*.slx
-      canonical/**/*.model.json
-    output: build/model-drift
-    fail-on: error
-```
-
-`base-ref` and `head-ref` default to `github.event.pull_request.base.sha` and `github.event.pull_request.head.sha`. Outside a PR event, pass both explicitly. The action requests no permissions, uploads nothing, and exposes deterministic report paths for caller-owned artifact or SARIF steps.
-
-See [GitHub Actions integration](docs/github-actions.md) for every input, output, permission, and event boundary.
+`base-ref` and `head-ref` default to `github.event.pull_request.base.sha` and
+`github.event.pull_request.head.sha`. Outside a PR event, pass both explicitly.
+The Action requests no permissions, uploads nothing by itself, and exposes
+deterministic report paths for caller-owned artifact or SARIF steps.
 
 ## Licensed `.slx` extraction boundary
 

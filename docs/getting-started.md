@@ -1,10 +1,13 @@
 # Getting started
 
-## 1. Add the pull-request workflow
+## 1. Add the published Action
 
 Copy [`samples/github-actions/canonical-pr.yml`](../samples/github-actions/canonical-pr.yml) to `.github/workflows/simulink-model-drift.yml`. Adjust `include` and `rules` for the repository, then pin the workflow to the reviewed release or commit SHA.
 
-The workflow runs on `pull_request`, discovers changed models between the event's base and head SHAs, writes an aggregate job summary, and retains the complete report directory.
+The workflow checks out the consumer repository and runs
+`samueltauil/simulink-model-diff@v0.3.1` from the published release. It
+discovers changed models between the event's base and head SHAs, writes an
+aggregate job summary, and retains the complete report directory.
 
 ## 2. Add policy rules
 
@@ -30,7 +33,7 @@ It does not replace engineering review of the model change.
 ## 4. Review the change in the Copilot app
 
 Download the artifact from the workflow run into the repository checkout. The
-reusable workflow names it `simulink-model-drift-<run-id>`.
+sample workflow names it `simulink-model-drift-<run-id>`.
 
 ```bash
 gh run download <run-id> \
@@ -54,24 +57,8 @@ replacement for the Action check or branch protection.
 Reports generated locally open from the same default path without the download
 step. See [the canvas guide](copilot-canvas.md).
 
-## Direct action use
-
-Use the composite action when the repository needs custom surrounding steps:
-
-```yaml
-- uses: actions/checkout@v7
-  with:
-    fetch-depth: 0
-    persist-credentials: false
-
-- uses: samueltauil/simulink-model-diff@v0.3.1
-  with:
-    include: models/**/*.slx
-    output: build/model-drift
-    fail-on: error
-```
-
-The PR event supplies refs automatically. Pass `base-ref` and `head-ref` for `workflow_dispatch`, scheduled runs, or another event without PR SHAs.
+The PR event supplies refs automatically. Pass `base-ref` and `head-ref` for
+`workflow_dispatch`, scheduled runs, or another event without PR SHAs.
 
 ## Licensed `.slx` analysis
 

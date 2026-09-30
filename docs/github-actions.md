@@ -6,13 +6,23 @@ own project and they do not use a local path.
 
 There are two hosted surfaces:
 
-- the reusable workflow at
-  `samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.3.1`;
-- the composite action at `samueltauil/simulink-model-diff@v0.3.1`.
+- the published Action at `samueltauil/simulink-model-diff@v0.3.1`;
+- an optional reusable workflow at
+  `samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.3.1`.
 
-Use the reusable workflow unless you need to own checkout, artifact retention,
-or surrounding workflow steps. Both references resolve to the same published
-release contract.
+The Action is the primary integration. GitHub downloads it from the tagged
+release when it appears in a job's `steps`. The reusable workflow is a wrapper
+that also owns checkout, artifact upload, and optional SARIF upload.
+
+These forms are not interchangeable:
+
+```yaml
+# Published Action: use inside steps.
+- uses: samueltauil/simulink-model-diff@v0.3.1
+
+# Reusable workflow: use at the job level.
+uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.3.1
+```
 
 ## Recommended consumer workflow
 
@@ -28,6 +38,66 @@ on:
 
 permissions:
   contents: read
+
+jobs:
+  model-drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out pull request history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Analyze model drift
+        id: drift
+        uses: samueltauil/simulink-model-diff@v0.3.1
+        with:
+          include: |
+            models/**/*.slx
+            canonical/**/*.model.json
+          fail-on: error
+
+      - name: Upload model drift reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: simulink-model-drift-${{ github.run_id }}
+          path: build/model-drift
+          if-no-files-found: warn
+          retention-days: 14
+```
+
+This checks out the consumer repository, then GitHub downloads the Action from
+the `v0.3.1` tag. Consumers do not clone or vendor this project.
+
+## Action inputs and outputs
+
+| Input | Default | Meaning |
+| --- | --- | --- |
+| `base-ref` | PR base SHA | Explicit base commit SHA or ref |
+| `head-ref` | PR head SHA | Explicit head commit SHA or ref |
+| `include` | `.slx`, `.mdl`, `.model.json` globs | Comma- or newline-separated model globs |
+| `rules` | empty | Optional repository-relative rules YAML path; empty uses built-in rules |
+| `output` | `build/model-drift` | Aggregate and per-model report directory |
+| `fail-on` | `error` | `none`, `warning`, or `error` |
+| `extractor-command` | empty | Optional non-privileged canonical extractor command |
+| `python-version` | `3.12` | Python runtime |
+
+The Action outputs `output`, `index-json`, `summary-markdown`, `sarif`, and
+`exit-code`. A custom `rules` path must exist in the consumer repository.
+Artifact retention and SARIF upload are workflow responsibilities, not Action
+inputs.
+
+## Optional reusable workflow
+
+Use the wrapper when you want this project to own checkout, artifact retention,
+and fork-safe SARIF upload:
+
+```yaml
+permissions:
+  contents: read
   security-events: write
 
 jobs:
@@ -41,30 +111,30 @@ jobs:
       upload-sarif: true
 ```
 
-Use `contents: read` only when `upload-sarif` is false. GitHub does not let a called workflow elevate permissions beyond the caller, so consumers enabling SARIF must grant `security-events: write`. The SARIF job still skips fork pull requests.
+`upload-sarif` and `artifact-retention-days` are inputs of this reusable
+workflow only. They are not inputs of the root Action. GitHub does not let a
+called workflow elevate permissions beyond the caller, so SARIF requires
+`security-events: write`. The SARIF job skips fork pull requests.
 
-## Reusable workflow inputs
+### Outputs
 
-| Input | Default | Meaning |
-| --- | --- | --- |
-| `base-ref` | PR base SHA | Explicit base commit SHA or ref |
-| `head-ref` | PR head SHA | Explicit head commit SHA or ref |
-| `include` | `.slx`, `.mdl`, `.model.json` globs | Comma- or newline-separated model globs |
-| `rules` | empty | Optional repository-relative rules YAML path; empty uses built-in rules |
-| `output` | `build/model-drift` | Aggregate and per-model report directory |
-| `fail-on` | `error` | `none`, `warning`, or `error` |
-| `extractor-command` | empty | Optional non-privileged canonical extractor command |
-| `python-version` | `3.12` | Python runtime |
-| `artifact-retention-days` | `14` | Report artifact retention |
-| `upload-sarif` | `false` | Upload SARIF for trusted events |
+The published Action's deterministic outputs are:
 
-The workflow outputs `output`, `index-json`, `summary-markdown`, `sarif`, and `exit-code`.
-The called workflow checks out the consumer repository, so a custom `rules`
-path must exist in that repository.
+| Output | Value |
+| --- | --- |
+| `output` | Configured report directory |
+| `index-json` | `<output>/model-drift-index.json` |
+| `summary-markdown` | `<output>/model-drift-summary.md` |
+| `sarif` | `<output>/model-drift.sarif` |
+| `exit-code` | Stable analyzer exit code |
+
+The Action writes the aggregate Markdown to `GITHUB_STEP_SUMMARY`. It does not
+upload artifacts, upload SARIF, comment on the pull request, or request
+permissions.
 
 ## Hand the artifact to the review canvas
 
-The reusable workflow uploads an artifact named
+The recommended workflow uploads an artifact named
 `simulink-model-drift-<run-id>`. Download it into a checkout of the pull
 request:
 
@@ -87,46 +157,6 @@ permissions. GitHub branch protection and the configured policy threshold
 remain authoritative.
 
 See [the canvas guide](copilot-canvas.md) for the full review sequence.
-
-## Direct composite action use
-
-Use the hosted composite action when the caller needs custom workflow steps:
-
-```yaml
-- uses: actions/checkout@v7
-  with:
-    fetch-depth: 0
-    persist-credentials: false
-
-- id: drift
-  uses: samueltauil/simulink-model-diff@v0.3.1
-  with:
-    include: |
-      models/**/*.slx
-      canonical/**/*.model.json
-    output: build/model-drift
-    fail-on: error
-```
-
-The action is downloaded by GitHub from the tagged release. The caller does
-not need to install the Python package or check out this repository. The
-checkout step above is for the consumer repository whose model history is being
-analyzed.
-
-## Composite action inputs and outputs
-
-The published root action accepts the same analysis inputs except artifact
-retention and SARIF upload. Its deterministic outputs are:
-
-| Output | Value |
-| --- | --- |
-| `output` | Configured report directory |
-| `index-json` | `<output>/model-drift-index.json` |
-| `summary-markdown` | `<output>/model-drift-summary.md` |
-| `sarif` | `<output>/model-drift.sarif` |
-| `exit-code` | Stable analyzer exit code |
-
-The action always attempts to write the aggregate Markdown to `GITHUB_STEP_SUMMARY`. It deliberately does not upload artifacts, upload SARIF, comment on the PR, or request permissions.
 
 ## Checkout requirements
 
@@ -152,21 +182,25 @@ A shallow checkout is unsupported because the base commit or changed model blobs
 - Skip SARIF for fork PRs; retain the summary and artifact as the portable result.
 - Keep `persist-credentials: false`.
 
-The reusable workflow implements these defaults. A repository may add a separate trusted workflow for comments or checks, but it must not execute untrusted PR content with elevated credentials.
+The direct Action sample implements read-only analysis and safe checkout. The
+optional reusable workflow also implements the separate fork-safe SARIF job. A
+repository may add another trusted workflow for comments or checks, but it must
+not execute untrusted pull-request content with elevated credentials.
 
 ## Licensed extraction
 
-The reusable PR workflow runs on `ubuntu-latest` and is not a licensed MATLAB execution boundary. Do not change it to a privileged self-hosted runner for automatic PR events.
+The public pull-request samples run on `ubuntu-latest` and are not a licensed
+MATLAB execution boundary. Do not change them to a privileged self-hosted
+runner for automatic pull-request events.
 
 Use [`licensed-slx.yml`](../samples/github-actions/licensed-slx.yml) as the starting point for a manually dispatched, environment-approved analysis of trusted refs. See [Runner setup](runner-setup.md).
 
 ## Release pinning
 
-The reusable workflow self-references the composite action from the same
-release. The project publishes the workflow and action together. Pin
-`v0.3.1` for the supported release contract, or pin the full commit SHA for an
-immutable supply-chain reference. Do not mix a newer workflow contract with an
-older composite action.
+Pin `v0.3.1` for the supported Action contract, or pin the full release commit
+SHA for an immutable supply-chain reference. The optional reusable workflow
+self-references the Action from the same release; do not mix a newer workflow
+contract with an older Action.
 
 The `v0.3.1` tag is also the release boundary for the Python package,
 report schemas, action metadata, and workflow contract. Upgrade those surfaces

@@ -4,8 +4,11 @@
 
 ```mermaid
 flowchart LR
-    E[Pull request event] --> W[Reusable workflow]
-    W --> C[Full-history checkout]
+    E[Pull request event] --> I{Integration}
+    I --> J[Consumer workflow]
+    I --> W[Optional reusable wrapper]
+    J --> C[Full-history checkout]
+    W --> C
     C --> A[Composite action]
     A --> P[PR CLI command]
     P --> X[Changed model discovery]
@@ -23,10 +26,12 @@ flowchart LR
     B --> Q
 ```
 
-The reusable workflow owns checkout, artifact retention, and SARIF permissions.
-The composite Action wraps the public `simulink-model-drift pr` command without
-requesting repository permissions. The Python package handles discovery,
-extraction, comparison, policy, and reporting.
+The primary integration is the published Action inside a consumer-owned
+workflow. The optional reusable wrapper owns checkout, artifact retention, and
+SARIF permissions for teams that prefer a job-level call. Both paths reach the
+same composite Action, which wraps `simulink-model-drift pr` without requesting
+repository permissions. The Python package handles discovery, extraction,
+comparison, policy, and reporting.
 
 The Action check and the canvas have separate jobs. The Action enforces the
 configured policy in CI. The canvas is a GitHub Copilot app extension that

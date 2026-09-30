@@ -2,6 +2,14 @@
 
 All notable user-visible changes are documented here. The project follows Semantic Versioning once public compatibility commitments are made; pre-1.0 releases may refine contracts with clear release notes.
 
+## Unreleased
+
+### Changed
+
+- Made the published root Action (`samueltauil/simulink-model-diff@v0.3.1`)
+  the primary installation example. The reusable workflow remains available as
+  an optional wrapper for artifact retention and fork-safe SARIF upload.
+
 ## 0.3.1 - 2026-09-29
 
 ### Fixed
