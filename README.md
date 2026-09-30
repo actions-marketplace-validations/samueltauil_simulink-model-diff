@@ -3,7 +3,7 @@
 Detect Simulink model drift in pull requests and review it before merge.
 
 [![CI](https://github.com/samueltauil/simulink-model-diff/actions/workflows/simulink-model-drift.yml/badge.svg)](https://github.com/samueltauil/simulink-model-diff/actions/workflows/simulink-model-drift.yml)
-[![Release](https://img.shields.io/github/v/release/samueltauil/simulink-model-diff?sort=semver)](https://github.com/samueltauil/simulink-model-diff/releases)
+[![Release](https://img.shields.io/badge/release-v0.3.1-2ea44f)](https://github.com/samueltauil/simulink-model-diff/releases/tag/v0.3.1)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 
