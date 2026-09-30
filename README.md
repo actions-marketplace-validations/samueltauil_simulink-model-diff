@@ -109,6 +109,14 @@ the check was blocked.
 A passing check tells you the rules were satisfied. It does not tell you
 whether the model change is right. That judgment happens in the canvas.
 
+The benefit is immediate. Instead of reading raw JSON, a reviewer sees the
+status of the extraction first, then the changed models, then the before/after
+values that matter, and then a merge assessment.
+
+<p align="center">
+  <img src="docs/assets/copilot-canvas-review.svg" alt="Simulink Model Diff canvas showing extraction trust, changed models, evidence, and merge assessment" width="100%">
+</p>
+
 The extension is committed at
 `.github/extensions/simulink-model-diff-canvas/`, the Copilot app's project
 scope, so cloning the repository is the whole installation. Open an agent
@@ -169,41 +177,6 @@ dedicated runner. It must not run automatically for fork PRs and must not hold
 deployment credentials. The checked-in extractor is a best-effort adapter and
 has not been qualified across MATLAB and Simulink releases in this repository.
 
-## Command line
-
-The Action is a distribution wrapper around one command:
-
-```bash
-simulink-model-drift pr \
-  --base-ref <sha> \
-  --head-ref <sha> \
-  --output build/model-drift \
-  --include "models/**/*.slx" \
-  --fail-on error
-```
-
-Add `--include` for each model glob and `--extractor-command "..."` when a
-reviewed extractor is available. The command compares repository state at the
-two refs; it does not require callers to prepare explicit file pairs.
-
-Canonical JSON is the portable semantic contract beneath PR analysis. It is
-useful for license-free CI, deterministic fixtures, and integrations that
-produce manifests outside GitHub.
-
-```bash
-simulink-model-drift analyze \
-  --base samples/canonical/controller-base.model.json \
-  --target samples/canonical/controller-target.model.json \
-  --rules samples/rules/default-rules.yml \
-  --output build/model-drift \
-  --fail-on none
-```
-
-The lower-level `analyze`, `compare`, `validate`, `doctor`, `schema`, and
-`fingerprint` commands are documented in [the CLI guide](docs/cli.md).
-Pair-oriented output names and contracts belong to those interfaces; PR
-analysis uses the aggregate files listed above.
-
 ## Sample models
 
 The [`samples/`](samples/) directory includes a cardiac digital twin scenario
@@ -228,11 +201,10 @@ not a single XML document. The package typically contains a root
 `simulink/blockdiagram.xml`, `simulink/configSetInfo.xml`,
 `simulink/stateflow.xml`, and `metadata/mwcoreProperties.xml`.
 
-`simulink-model-drift inspect-slx <artifact>` validates that this package
-structure is present and emits an inventory without claiming semantic
-extraction. This is a bounded safety check: the file may be a valid Simulink
-package while still needing an approved MATLAB or Simulink extractor to produce
-a trustworthy canonical manifest.
+The analyzer validates the package structure before extraction without
+claiming that a valid package is a complete semantic model. An approved MATLAB
+or Simulink extractor may still be required to produce a trustworthy canonical
+manifest.
 
 ## Capability boundaries
 
@@ -250,10 +222,14 @@ a trustworthy canonical manifest.
 | [Getting started](docs/getting-started.md) | First run, from workflow to canvas review |
 | [GitHub Actions integration](docs/github-actions.md) | Action inputs, outputs, and the reusable workflow |
 | [Copilot app canvas](docs/copilot-canvas.md) | Install, open, and drive the review canvas |
-| [CLI](docs/cli.md) | Every command and exit code |
 | [Architecture](docs/architecture.md) | Pipeline stages and report contracts |
 | [Security](docs/security.md) | Threat model, fork PRs, extractor trust |
 | [Runner setup](docs/runner-setup.md) | Licensed MATLAB runner guidance |
+
+The repository also includes a command-line interface used by the Action and
+by maintainers for local diagnostics. It is documented in the
+[CLI reference](docs/cli.md), but it is not required for normal pull request
+usage.
 
 ## Project status
 

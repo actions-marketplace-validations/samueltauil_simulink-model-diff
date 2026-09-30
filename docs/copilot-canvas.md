@@ -19,6 +19,26 @@ changes actually matters.
 The canvas keeps both facts in view. It leads with analysis completeness, then
 shows scope, then evidence, and only then offers a merge assessment.
 
+## Review in 30 seconds
+
+This is the shortcut that makes the canvas useful in a pull request review:
+
+1. Open the canvas from the GitHub Copilot app.
+2. Confirm the extraction status. If it is `partial`, `unsupported`, or
+   `failed`, the review stops there.
+3. Check the model queue to see which blocks changed.
+4. Inspect the evidence map for before/after values and the categories that
+   changed.
+5. Use the decision card to confirm whether the change is ready for human
+   review or needs a stronger extraction first.
+
+<p align="center">
+  <img src="assets/copilot-canvas-review.svg" alt="Simulink Model Diff canvas showing extraction trust, changed models, evidence, and merge assessment" width="100%">
+</p>
+
+This is the practical benefit. You are not reading a JSON dump. You are looking
+at a review workflow designed around trust, scope, evidence, and decision.
+
 ## Install
 
 The extension is committed to this repository at
