@@ -15,6 +15,27 @@ Every run writes:
 
 The analyzer reports added, removed, modified, moved, and unresolved model elements. Policy findings can fail the PR at `warning` or `error` severity while reports remain available as workflow artifacts.
 
+## Copilot visual diff canvas
+
+This repository includes a project-scoped GitHub Copilot CLI canvas extension in
+`.github/extensions/simulink-model-diff-canvas`. When the repository is open in
+Copilot CLI, ask Copilot to open the **Simulink Model Diff** canvas with either
+an aggregate PR index or an individual drift report:
+
+```text
+Open the Simulink Model Diff canvas for build/model-drift/model-drift-index.json
+```
+
+The canvas renders changed models, aggregate counters, analysis and policy
+status, and color-coded element-level before/after values. It consumes the
+deterministic JSON artifacts produced by this tool; it does not load or execute
+the `.slx` file and does not claim to reproduce the native Simulink editor.
+
+The default report path is `build/model-drift/model-drift-index.json`. The
+canvas also accepts a lower-level report such as
+`examples/output/controller.drift.json`. Report paths are restricted to the
+active workspace, and the local renderer binds only to loopback.
+
 ## Adopt in one workflow
 
 Copy [the minimal consumer workflow](examples/github-actions/canonical-pr.yml) into `.github/workflows/simulink-model-drift.yml`:

@@ -9,6 +9,9 @@ All notable user-visible changes are documented here. The project follows Semant
 - PR-native composite action around `simulink-model-drift pr`, with GitHub-context ref defaults, include globs, aggregate report outputs, and automatic job-summary rendering.
 - Reusable `workflow_call` PR analysis workflow with full-history checkout, report artifact upload, and a separately permissioned, fork-safe optional SARIF job.
 - Minimal consumer and manually approved licensed-runner examples.
+- Project-scoped Copilot CLI visual diff canvas for aggregate PR indexes and
+  individual model drift reports, with model selection and color-coded
+  before/after evidence.
 
 ### Changed
 
