@@ -5,7 +5,7 @@ Simulink Model Drift does two things:
 | Part | Runs where | Purpose |
 | --- | --- | --- |
 | GitHub Action | Pull-request CI | Find changed models, compare base and head, evaluate policy, and publish deterministic reports |
-| GitHub Copilot canvas | Copilot CLI in the checked-out repository | Turn the report into an interactive model review before the pull request is approved |
+| Copilot app canvas | Right side panel of a GitHub Copilot app session | Turn that report into an interactive model review before the pull request is approved |
 
 The Action produces the evidence. The canvas reads the same JSON reports for
 human review.
@@ -16,7 +16,7 @@ flowchart LR
     A --> S[Job summary]
     A --> P[Policy check]
     A --> R[Report artifact]
-    R --> C[Copilot review canvas]
+    R --> C[Copilot app canvas]
     C --> H[Human review]
     P --> D[Pull-request decision]
     H --> D
@@ -42,36 +42,43 @@ Each run produces:
 `fail-on` controls the policy threshold. Reports are still uploaded when the
 Action fails, so reviewers can see why the check was blocked.
 
-## 2. Review the report in Copilot
+## 2. Review the change in the Copilot app
 
-The project-scoped extension at
-`.github/extensions/simulink-model-diff-canvas/extension.mjs` registers the
-**Simulink Model Diff** canvas in GitHub Copilot CLI.
+A passing check tells you the rules were satisfied. It does not tell you whether
+the model change is right. That judgment happens in the canvas.
 
-Open a report generated in the current checkout:
+The extension is committed at
+`.github/extensions/simulink-model-diff-canvas/`, the Copilot app's project
+scope, so cloning the repository is the whole installation. Open an agent
+session in the repository and ask for it:
 
 ```text
 Open the Simulink Model Diff canvas for build/model-drift/model-drift-index.json
 ```
 
-The canvas follows the review sequence used before approving a model change:
+The canvas opens in the app's right side panel beside the conversation and
+orders the review the way engineers actually run it:
 
-1. **Trust** checks whether extraction was complete, partial, unsupported, or
-   failed.
-2. **Scope** identifies affected models, paths, blocks, and declared
-   connections.
-3. **Evidence** provides filters and before/after values for each recorded
-   revision.
-4. **Decision** explains whether the report needs model-owner review, policy
-   remediation, or a qualified extraction run.
+1. **Trust.** State whether extraction was complete, partial, unsupported, or
+   failed, before anything else is presented.
+2. **Scope.** List the changed models and draw only the blocks and connections
+   the report explicitly records.
+3. **Evidence.** Pair before and after values, filtered by category or model
+   path.
+4. **Decision.** Give a merge assessment derived from analysis status, policy
+   status, and recorded drift.
 
-The canvas does not approve the pull request, change a check result, or execute
-the `.slx` file. Branch protection and the Action's policy result remain
+Because it is an app canvas rather than a static file, the agent in the session
+can drive it while you read. It can load another report, jump to a specific
+model, or refresh after a new analysis run through the canvas capabilities
+`load_report`, `select_model`, and `refresh`.
+
+The canvas never opens the `.slx` file, calls the GitHub API, posts a review, or
+changes a check result. Branch protection and the Action's policy result remain
 authoritative.
 
-The canvas accepts an aggregate `model-drift-index.json`, a per-model
-`model-drift.json`, or a canonical model snapshot. Paths must remain inside the
-active workspace. The renderer runs on a loopback-only local server.
+See [the canvas guide](docs/copilot-canvas.md) for inputs, capabilities, and
+troubleshooting.
 
 ## Adopt in one workflow
 
@@ -197,7 +204,7 @@ baseline/target snapshots for the documented 50 mg → 60 mg beta-blocker
 scenario. The sample is intentionally marked `partial` until a licensed
 Simulink extractor qualifies the generated `.slx` artifact.
 
-Open the sample directly in the Copilot canvas:
+Open the sample directly in the canvas:
 
 ```text
 Open the Simulink Model Diff canvas for samples/cardiac-digital-twin/drift.json
@@ -225,7 +232,7 @@ implemented. The Action contract is documented under `Unreleased`; release the
 Action and reusable workflow together as `v0.3.0` before external adoption.
 Consumers should pin an exact release or reviewed commit SHA.
 
-See [Getting started](docs/getting-started.md), [Architecture](docs/architecture.md), [Security](docs/security.md), [CHANGELOG.md](CHANGELOG.md), and [ROADMAP.md](ROADMAP.md).
+See [Getting started](docs/getting-started.md), [GitHub Actions integration](docs/github-actions.md), [Copilot app canvas](docs/copilot-canvas.md), [Architecture](docs/architecture.md), [Security](docs/security.md), [CHANGELOG.md](CHANGELOG.md), and [ROADMAP.md](ROADMAP.md).
 
 ## License
 

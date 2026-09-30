@@ -1,0 +1,8 @@
+{
+  "name": "simulink-model-diff-canvas",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Simulink Model Diff review canvas for the GitHub Copilot app.",
+  "main": "extension.mjs",
+  "license": "MIT"
+}

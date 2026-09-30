@@ -36,4 +36,16 @@ Loading `.slx` or `.mdl` can involve callbacks, scripts, custom code, references
 
 Model paths, names, parameters, and rule messages are untrusted. Reporters must escape content for Markdown and SARIF, normalize repository-relative paths, validate schemas, and avoid secrets or proprietary details in logs. Incomplete extraction must remain an explicit result.
 
+## Review canvas boundary
+
+The [Copilot app canvas](copilot-canvas.md) reads analyzer JSON that already
+exists on disk. It does not open the `.slx` package, run an extractor, or call
+the GitHub API, so it cannot approve a pull request or change a check result.
+
+Report paths are resolved against the active workspace and rejected when they
+escape it. Input must be a JSON file no larger than 64 MiB. The renderer binds
+to an ephemeral loopback port, serves one instance per canvas session, and sets
+a restrictive content security policy. Because report content is untrusted, the
+renderer escapes model names, parameters, and rule messages before display.
+
 See [Runner setup](runner-setup.md) for licensed environments and [SECURITY.md](../SECURITY.md) for vulnerability reporting.

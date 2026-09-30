@@ -16,7 +16,7 @@ flowchart LR
     R --> S[Job summary]
     R --> T[Artifact upload]
     R --> U[Optional trusted SARIF job]
-    T -. download .-> V[Copilot review canvas]
+    T -. download .-> V[Copilot app canvas]
     V --> H[Human model review]
     G --> B[Branch protection]
     H --> Q[Pull-request decision]
@@ -29,9 +29,10 @@ requesting repository permissions. The Python package handles discovery,
 extraction, comparison, policy, and reporting.
 
 The Action check and the canvas have separate jobs. The Action enforces the
-configured policy in CI. The canvas reads the generated report after CI and
-helps a reviewer inspect the evidence. It cannot alter the check or approve the
-pull request.
+configured policy in CI. The canvas is a GitHub Copilot app extension that
+reads the generated report afterwards and helps a reviewer inspect the
+evidence. It cannot alter the check or approve the pull request. See
+[the canvas guide](copilot-canvas.md).
 
 ## Permission separation
 
@@ -47,7 +48,7 @@ The output directory contains:
 
 | Output | Consumer |
 | --- | --- |
-| Aggregate JSON index | Copilot canvas and other integrations |
+| Aggregate JSON index | Copilot app canvas and other integrations |
 | Aggregate Markdown | GitHub Actions job summary |
 | Aggregate SARIF | Optional code-scanning upload |
 | Per-model JSON, Markdown, SARIF, and SVG | Review artifact |

@@ -9,16 +9,17 @@ All notable user-visible changes are documented here. The project follows Semant
 - PR-native composite action around `simulink-model-drift pr`, with GitHub-context ref defaults, include globs, aggregate report outputs, and automatic job-summary rendering.
 - Reusable `workflow_call` PR analysis workflow with full-history checkout, report artifact upload, and a separately permissioned, fork-safe optional SARIF job.
 - Minimal consumer and manually approved licensed-runner examples.
-- Project-scoped Copilot CLI visual diff canvas for aggregate PR indexes and
-  individual model drift reports, with model selection and color-coded
-  before/after evidence.
+- Project-scoped GitHub Copilot app canvas extension for aggregate PR indexes and
+  individual model drift reports, with model selection, color-coded
+  before/after evidence, and the agent-callable `load_report`, `select_model`,
+  and `refresh` capabilities.
 
 ### Changed
 
 - Reframed the product, onboarding, architecture, security, and runner guidance around automatic pull-request model drift analysis.
 - Replaced pair-oriented action inputs and outputs with the upcoming `v0.3.0` PR contract. This is a breaking action-interface change from `v0.2.0`.
 - Updated first-party GitHub Actions dependencies to their Node.js 24-compatible v7 releases.
-- Reworked the Copilot canvas as a technical review station with a dark model
+- Reworked the Copilot app canvas as a technical review station with a dark model
   queue, light evidence workspace, instrument-style impact map, and compact
   before/after ledger. Sections size themselves from the report data, omit
   unavailable policy and metadata fields, distinguish absent values from

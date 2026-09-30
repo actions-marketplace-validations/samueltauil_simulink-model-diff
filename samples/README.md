@@ -1,7 +1,7 @@
 # Real-world sample models
 
 This directory contains reproducible sample inputs for the analyzer and the
-Copilot visual diff canvas.
+Copilot app review canvas.
 
 ## Cardiac digital twin
 
@@ -16,7 +16,7 @@ This sample therefore includes:
 - a baseline canonical snapshot;
 - a target canonical snapshot representing the documented 20% beta-blocker
   dose increase from 50 mg to 60 mg;
-- a ready-to-review drift report for the Copilot canvas.
+- a ready-to-review drift report for the review canvas.
 
 The canonical snapshots are an evidence-preserving representation of the
 documented model architecture. They are marked `partial` because they were

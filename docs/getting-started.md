@@ -24,7 +24,7 @@ Artifacts are uploaded even when policy fails. SARIF is optional and is skipped 
 The policy result answers whether the pull request meets the configured rules.
 It does not replace engineering review of the model change.
 
-## 4. Open the report in Copilot
+## 4. Review the change in the Copilot app
 
 Download the artifact from the workflow run into the repository checkout. The
 reusable workflow names it `simulink-model-drift-<run-id>`.
@@ -35,18 +35,21 @@ gh run download <run-id> \
   --dir build/model-drift
 ```
 
-Open Copilot CLI from the repository root and request the project canvas:
+The review canvas ships with this repository under `.github/extensions`, so a
+clone is the only installation step. Open a GitHub Copilot app session in the
+repository and ask for it:
 
 ```text
 Open the Simulink Model Diff canvas for build/model-drift/model-drift-index.json
 ```
 
-The canvas checks analysis completeness before presenting the recorded model
-scope and element-level evidence. Use its merge assessment as review guidance,
-not as a replacement for the Action check or branch protection.
+The canvas opens in the app's right side panel. It reports analysis
+completeness first, then the changed models, then before/after evidence, and
+finally a merge assessment. Treat that assessment as review guidance, not as a
+replacement for the Action check or branch protection.
 
-Reports generated locally can be opened from the same default path without the
-download step.
+Reports generated locally open from the same default path without the download
+step. See [the canvas guide](copilot-canvas.md).
 
 ## Direct action use
 

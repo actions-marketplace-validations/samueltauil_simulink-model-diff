@@ -53,5 +53,5 @@ simulink-model-drift compare \
   --fail-on none
 ```
 
-Open `samples/cardiac-digital-twin/drift.json` directly in the Copilot canvas
+Open `samples/cardiac-digital-twin/drift.json` in the Copilot app review canvas
 for a precomputed visual review.

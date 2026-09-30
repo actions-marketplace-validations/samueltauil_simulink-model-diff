@@ -53,7 +53,7 @@ Use `contents: read` only when `upload-sarif` is false. GitHub does not let a ca
 
 The workflow outputs `output`, `index-json`, `summary-markdown`, `sarif`, and `exit-code`.
 
-## Review the artifact in Copilot
+## Hand the artifact to the review canvas
 
 The reusable workflow uploads an artifact named
 `simulink-model-drift-<run-id>`. Download it into a checkout of the pull
@@ -65,17 +65,19 @@ gh run download <run-id> \
   --dir build/model-drift
 ```
 
-Then open the aggregate index in Copilot CLI:
+Then open the aggregate index from a GitHub Copilot app session in that
+checkout:
 
 ```text
 Open the Simulink Model Diff canvas for build/model-drift/model-drift-index.json
 ```
 
-The canvas reads the downloaded JSON. It does not call the Actions API, write a
-pull-request review, change a check result, or elevate permissions. GitHub
-branch protection and the configured policy threshold remain authoritative.
+The canvas reads the downloaded JSON and nothing else. It does not call the
+Actions API, write a pull-request review, change a check result, or elevate
+permissions. GitHub branch protection and the configured policy threshold
+remain authoritative.
 
-See [Getting started](getting-started.md) for the complete review sequence.
+See [the canvas guide](copilot-canvas.md) for the full review sequence.
 
 ## Composite action inputs and outputs
 
