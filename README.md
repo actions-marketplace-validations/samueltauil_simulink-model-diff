@@ -26,10 +26,20 @@ an aggregate PR index or an individual drift report:
 Open the Simulink Model Diff canvas for build/model-drift/model-drift-index.json
 ```
 
-The canvas renders changed models, aggregate counters, analysis and policy
-status, and color-coded element-level before/after values. It consumes the
-deterministic JSON artifacts produced by this tool; it does not load or execute
-the `.slx` file and does not claim to reproduce the native Simulink editor.
+The canvas is the human-review step between CI analysis and pull-request
+approval. It guides reviewers through four stages:
+
+1. check whether the analysis is complete enough to trust;
+2. establish the affected model paths and topology;
+3. inspect filterable before/after evidence;
+4. read a merge assessment derived from analysis completeness, policy status,
+   and the recorded drift.
+
+The assessment does not approve a pull request or replace repository policy.
+For example, a `partial` cardiac sample asks for qualified extraction instead
+of presenting the visible parameter change as merge-ready. The canvas consumes
+the deterministic JSON artifacts produced by this tool; it does not load or
+execute the `.slx` file and does not reproduce the native Simulink editor.
 
 The default report path is `build/model-drift/model-drift-index.json`. The
 canvas also accepts a lower-level report such as

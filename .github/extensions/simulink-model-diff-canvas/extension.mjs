@@ -59,19 +59,67 @@ function normalizeChange(change) {
     };
 }
 
+function assessReview(analysisStatus, policyStatus, changeCount) {
+    const analysis = String(analysisStatus || "").toLowerCase();
+    const policy = String(policyStatus || "").toLowerCase();
+    if (["failed", "unsupported"].includes(analysis)) {
+        return {
+            tone: "stop",
+            title: "Analysis unavailable",
+            detail: "The model evidence is not sufficient for a merge decision.",
+        };
+    }
+    if (analysis && analysis !== "complete") {
+        return {
+            tone: "warn",
+            title: "Qualified extraction needed",
+            detail:
+                "This report is partial. Review the visible drift, then run the approved " +
+                "semantic extractor before merge.",
+        };
+    }
+    if (policy === "failed") {
+        return {
+            tone: "stop",
+            title: "Policy gate failed",
+            detail: "Resolve the reported policy findings before this change is merged.",
+        };
+    }
+    if (changeCount > 0) {
+        return {
+            tone: "warn",
+            title: "Reviewer decision required",
+            detail:
+                "The analysis completed and found model drift. Confirm the intended " +
+                "behavior and supporting tests.",
+        };
+    }
+    return {
+        tone: "pass",
+        title: "No drift detected",
+        detail: "The available analysis completed without model changes.",
+    };
+}
+
 function driftModel(id, label, drift, record = {}) {
     const topology = drift?.topology || drift || {};
+    const changes = Array.isArray(drift?.changes) ? drift.changes.map(normalizeChange) : [];
+    const analysisStatus = String(
+        record.analysisStatus || drift?.comparison?.status || "unknown",
+    );
+    const policyStatus = String(record.policyStatus || "unknown");
     return {
         id,
         label,
         changeType: String(record.changeType || "pair"),
         basePath: record.basePath || drift?.comparison?.baseArtifact || null,
         headPath: record.headPath || drift?.comparison?.targetArtifact || null,
-        analysisStatus: String(record.analysisStatus || drift?.comparison?.status || "unknown"),
-        policyStatus: String(record.policyStatus || "unknown"),
+        analysisStatus,
+        policyStatus,
         summary: record.summary || drift?.summary || {},
         findingCounts: record.findingCounts || {},
-        changes: Array.isArray(drift?.changes) ? drift.changes.map(normalizeChange) : [],
+        changes,
+        review: assessReview(analysisStatus, policyStatus, changes.length),
         topology: {
             blocks: Array.isArray(topology.blocks)
                 ? topology.blocks.map((block) => ({
@@ -225,41 +273,54 @@ function renderHtml() {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Simulink Model Drift</title>
 <style>
-:root{color-scheme:light;--paper:#ece8db;--paper2:#f7f3e8;--ink:#162522;--faint:#8f9488;--rule:#b9b8ab;--signal:#e64a2e;--teal:#087c78;--lime:#b9d84c;--blueprint:#102e2d;--blueprint2:#173a37;--white:#fffdf5}
-*{box-sizing:border-box}body{margin:0;color:var(--ink);font:14px/1.45 "Segoe UI",Arial,sans-serif;background-color:var(--paper);background-image:linear-gradient(rgba(22,37,34,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(22,37,34,.045) 1px,transparent 1px);background-size:24px 24px}
-button{font:inherit}header{height:70px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;border-bottom:2px solid var(--ink);background:var(--paper2);position:sticky;top:0;z-index:4}
-.wordmark{height:70px;display:flex;align-items:center;padding:0 22px;border-right:2px solid var(--ink);font:800 13px/1 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.12em}.wordmark i{display:inline-block;width:9px;height:31px;background:var(--signal);margin-right:12px;transform:skew(-13deg)}
-.fileline{min-width:0;padding:0 20px}.fileline strong{display:block;font:700 10px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.16em;text-transform:uppercase}.sub{margin-top:5px;color:#62675f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:12px ui-monospace,SFMono-Regular,Consolas,monospace}
-.status{align-self:stretch;display:grid;place-items:center;min-width:120px;padding:0 18px;border-left:2px solid var(--ink);font:800 11px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;background:var(--lime)}
-main{display:grid;grid-template-columns:clamp(190px,18vw,270px) minmax(0,1fr);min-height:calc(100vh - 70px)}aside{border-right:2px solid var(--ink);background:rgba(247,243,232,.88);padding:22px 0;overflow:auto}
-.index-title{padding:0 18px 13px;font:800 10px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.18em;text-transform:uppercase;border-bottom:1px solid var(--rule)}.index-title b{float:right;color:var(--signal)}
-.model{width:100%;display:grid;grid-template-columns:34px 1fr;gap:7px;text-align:left;color:var(--ink);background:transparent;border:0;border-bottom:1px solid var(--rule);padding:13px 14px;cursor:pointer}.model:before{content:attr(data-number);font:800 10px ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--faint);padding-top:2px}.model:hover{background:#fff8dd}.model.active{background:var(--ink);color:var(--white);box-shadow:inset 7px 0 0 var(--signal)}.model span{overflow:hidden;text-overflow:ellipsis}.model small{display:block;color:inherit;opacity:.62;margin-top:4px;font:10px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.08em}
-.content{padding:clamp(24px,3vw,44px) clamp(20px,3.8vw,64px) 70px;overflow:auto;width:100%;margin:auto}.folio{display:grid;grid-template-columns:minmax(0,4fr) minmax(150px,1fr);gap:clamp(22px,4vw,64px);padding-bottom:22px;border-bottom:5px solid var(--ink)}
-.kicker{font:800 10px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.2em;text-transform:uppercase;color:var(--signal)}h1{font:500 clamp(34px,5vw,68px)/.95 Georgia,"Times New Roman",serif;letter-spacing:-.045em;margin:12px 0 14px;max-width:850px;overflow-wrap:anywhere}
-.route{display:grid;grid-template-columns:auto 28px auto;align-items:center;gap:8px;width:min(100%,850px);font:11px ui-monospace,SFMono-Regular,Consolas,monospace;color:#4f5751}.route span:first-child,.route span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.route b{height:1px;background:var(--signal);position:relative}.route b:after{content:"";position:absolute;right:0;top:-3px;border-left:6px solid var(--signal);border-top:3px solid transparent;border-bottom:3px solid transparent}
-.stamp{min-height:134px;border:2px solid var(--ink);display:grid;place-content:center;text-align:center;transform:rotate(1deg);font:800 10px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.13em;padding:15px}.stamp strong{font-size:25px;color:var(--signal);letter-spacing:0;margin:5px 0}.stamp small{display:block;margin-top:5px;letter-spacing:.08em}.stamp:after{content:"CHANGE RECORD";border-top:1px solid var(--ink);padding-top:8px;margin-top:8px}
-.tape{display:grid;border:2px solid var(--ink);border-top:0;background:var(--paper2)}.metric{padding:13px 15px;border-right:1px solid var(--ink);display:flex;align-items:baseline;justify-content:space-between;gap:8px}.metric:last-child{border:0}.metric b{font:500 30px Georgia,serif}.metric span{font:800 9px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.1em}
-.sheet-label{display:flex;align-items:center;gap:12px;margin:34px 0 12px;font:800 10px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.18em;text-transform:uppercase}.sheet-label:after{content:"";height:1px;background:var(--ink);flex:1}.sheet-label em{font-style:normal;color:var(--signal)}
-.schematic{position:relative;background:var(--blueprint);color:#e8f2df;border:2px solid var(--ink);padding:48px 28px 28px;overflow:auto;background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:18px 18px;box-shadow:8px 8px 0 #b7b3a5}.schematic:before{content:"MODEL INVENTORY / RECORDED CONNECTIONS";position:absolute;top:14px;left:18px;font:800 9px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.16em;color:#9eb6a7}.schematic:after{content:"REPORT DATA ONLY";position:absolute;top:14px;right:18px;font:9px ui-monospace,SFMono-Regular,Consolas,monospace;color:#9eb6a7}
-.system-map{display:grid;grid-template-columns:minmax(0,2fr) minmax(220px,.75fr);gap:28px}.topology{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;align-content:start}.node{min-height:82px;padding:12px;border:1px solid #9bbab0;background:var(--blueprint2);position:relative}.node.changed{background:var(--signal);border-color:#ffcabd;color:#fff}.node-name{font:700 12px ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}.node-type{font:9px ui-monospace,SFMono-Regular,Consolas,monospace;opacity:.66;margin-top:8px;text-transform:uppercase;letter-spacing:.1em}.node-mark{font:800 9px ui-monospace,SFMono-Regular,Consolas,monospace;margin-top:7px}.edge-register{border-left:1px solid #77938a;padding-left:20px}.edge-register h3{font:800 9px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;color:#9eb6a7;margin:0 0 10px}.edge{display:grid;grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr);gap:5px;padding:8px 0;border-top:1px solid rgba(155,186,176,.28);font:10px/1.35 ui-monospace,SFMono-Regular,Consolas,monospace}.edge b{color:var(--lime);text-align:center}.edge span{overflow-wrap:anywhere}
-.ledger{border-top:2px solid var(--ink)}.change{display:grid;grid-template-columns:92px minmax(190px,.8fr) minmax(0,1.7fr);border-bottom:1px solid var(--ink);background:rgba(247,243,232,.76)}.change:hover{background:#fff8dd}.change-code{padding:16px 12px;border-right:1px solid var(--ink);font:800 9px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.1em}.change-code i{display:block;width:12px;height:12px;margin-bottom:9px;background:var(--teal)}.change.added .change-code i{background:var(--lime)}.change.removed .change-code i{background:var(--signal)}.change.modified .change-code i{background:#f4b942}.change.moved .change-code i{background:#6b64d8}
-.change-identity{padding:15px 16px;border-right:1px solid var(--ink)}.change-identity code{font:700 12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}.change-identity .meta{margin-top:8px;color:#62675f;font:9px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.08em}
-.values{display:grid;grid-template-columns:1fr 1fr}.value{padding:15px 17px;min-width:0}.value+ .value{border-left:1px solid var(--rule)}.value label{display:block;font:800 9px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.13em;color:#696e66}.value pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0 0;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}.before pre{text-decoration-color:var(--signal)}.after{background:rgba(185,216,76,.11)}.after pre{color:#174f49}
-.empty,.error{padding:28px;border:1px solid var(--ink);background:var(--paper2);font:13px ui-monospace,SFMono-Regular,Consolas,monospace}.error{border-left:9px solid var(--signal)}
-@media(max-width:1100px){.system-map{grid-template-columns:1fr}.edge-register{border-left:0;border-top:1px solid #77938a;padding:18px 0 0}.folio{grid-template-columns:minmax(0,3fr) minmax(145px,1fr)}}
-@media(max-width:760px){main{grid-template-columns:1fr}aside{border-right:0;border-bottom:2px solid var(--ink);max-height:230px}.wordmark{padding:0 13px;font-size:10px}.fileline{padding:0 12px}.status{min-width:82px;padding:0 9px;font-size:9px}.content{padding:26px 14px 55px}.folio{grid-template-columns:1fr}.stamp{min-height:auto;display:flex;gap:10px;padding:10px;transform:none;justify-content:center}.stamp:after{border:0;margin:0;padding:0}.tape{grid-template-columns:repeat(2,1fr)!important}.metric{border-bottom:1px solid var(--ink)}.change{grid-template-columns:70px 1fr}.change-identity{border-right:0}.values{grid-column:1/-1;border-top:1px solid var(--rule)}}
+:root{color-scheme:light;--shell:#151a22;--shell2:#1d2430;--paper:#f1f0eb;--surface:#fbfaf6;--line:#c9c8c1;--line-dark:#343c49;--text:#1a2027;--muted:#66707a;--accent:#315efb;--accent2:#ff5a3c;--acid:#d8f36a;--amber:#eaa62b;--rose:#d83c55;--olive:#6d9d20;--shadow:rgba(21,26,34,.14)}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;color:var(--text);font:14px/1.45 "Segoe UI",Inter,Arial,sans-serif;background:var(--paper);letter-spacing:.005em}
+button{font:inherit}
+header{height:64px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;background:var(--shell);color:#f7f7f2;position:sticky;top:0;z-index:10;border-bottom:4px solid var(--accent2)}
+.wordmark{height:60px;display:flex;align-items:center;padding:0 20px;border-right:1px solid var(--line-dark);font:800 11px/1 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap}.wordmark i{display:inline-block;width:12px;height:12px;background:var(--acid);margin-right:12px;transform:rotate(45deg)}
+.fileline{min-width:0;padding:0 18px}.fileline strong{display:block;font:700 9px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.18em;text-transform:uppercase;color:#9aa4b2}.sub{margin-top:5px;color:#c2cad3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:11px ui-monospace,SFMono-Regular,Consolas,monospace}
+.status{align-self:stretch;display:grid;place-items:center;min-width:118px;padding:0 18px;border-left:1px solid var(--line-dark);font:800 9px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--acid)}
+main{display:grid;grid-template-columns:clamp(210px,18vw,280px) minmax(0,1fr);min-height:calc(100vh - 64px)}aside{background:var(--shell);color:#f7f7f2;padding:18px 0 0;overflow:auto}
+.index-title{padding:0 18px 14px;font:800 9px/1.1 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.18em;text-transform:uppercase;color:#8e99a8;border-bottom:1px solid var(--line-dark)}.index-title b{float:right;color:var(--acid);font-size:11px}
+.model{width:100%;display:grid;grid-template-columns:28px 1fr;gap:8px;text-align:left;color:#f7f7f2;background:transparent;border:0;border-bottom:1px solid var(--line-dark);padding:13px 14px;cursor:pointer}.model:before{content:attr(data-number);font:800 9px ui-monospace,SFMono-Regular,Consolas,monospace;color:#758091;padding-top:2px}.model:hover{background:var(--shell2)}.model.active{background:#263040;box-shadow:inset 4px 0 0 var(--acid)}.model span{overflow:hidden;text-overflow:ellipsis}.model small{display:block;color:#9da8b7;margin-top:4px;font:9px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.08em}
+.content{padding:0;overflow:auto;width:100%;margin:auto;background:var(--paper)}.phasebar{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}.phase{padding:13px 16px;border-right:1px solid var(--line);font:800 9px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.12em}.phase:last-child{border:0}.phase b{display:block;color:var(--accent);font-size:10px;margin-bottom:4px}.phase.warn b{color:var(--amber)}.phase.stop b{color:var(--rose)}
+.workspace{display:grid;grid-template-columns:minmax(0,1fr) clamp(250px,23vw,330px);gap:0;max-width:1600px;margin:auto}.review-main{padding:clamp(24px,3vw,46px)}.decision-rail{border-left:1px solid var(--line);background:#e7e6e0;padding:24px;position:relative}.decision{position:sticky;top:78px}.folio{padding-bottom:24px;border-bottom:1px solid var(--line)}
+.kicker{font:800 9px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}h1{font:650 clamp(30px,3vw,50px)/1.04 "Segoe UI",Inter,Arial,sans-serif;letter-spacing:-.045em;margin:11px 0 13px;max-width:850px;overflow-wrap:anywhere}
+.route{display:grid;grid-template-columns:auto 28px auto;align-items:center;gap:8px;width:min(100%,800px);font:10px ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--muted)}.route span:first-child,.route span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.route b{height:2px;background:var(--accent2);position:relative}.route b:after{content:"";position:absolute;right:0;top:-3px;border-left:6px solid var(--accent2);border-top:4px solid transparent;border-bottom:4px solid transparent}
+.tape{display:grid;border:1px solid var(--line);background:var(--surface);overflow:hidden;margin-top:22px}.metric{padding:12px 14px;border-right:1px solid var(--line);display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-height:66px}.metric:last-child{border-right:0}.metric b{font:650 25px/1.1 "Segoe UI",Inter,Arial,sans-serif;letter-spacing:-.05em}.metric span{font:800 8px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.sheet-label{display:flex;align-items:center;gap:12px;margin:30px 0 11px;font:800 9px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}.sheet-label:after{content:"";height:1px;background:var(--line);flex:1}.sheet-label em{font-style:normal;color:var(--accent)}
+.schematic{position:relative;background:#101823;color:#f5f7f8;border:1px solid #101823;padding:34px 20px 22px;overflow:auto;box-shadow:8px 8px 0 #d6d4cc}.schematic:before{content:"IMPACT MAP";position:absolute;top:12px;left:16px;font:800 8px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.18em;text-transform:uppercase;color:#8895a5}.schematic:after{content:"DECLARED TOPOLOGY";position:absolute;top:12px;right:16px;font:800 8px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.16em;text-transform:uppercase;color:#8895a5}
+.system-map{display:grid;grid-template-columns:minmax(0,2fr) minmax(190px,.72fr);gap:20px}.topology{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;align-content:start}.node{min-height:80px;padding:12px;border:1px solid #435063;background:#1b2634;position:relative;cursor:pointer;color:#f6f7f8}.node:hover{border-color:#8fa1ba}.node.changed{background:#28334a;border-color:var(--accent2);box-shadow:inset 4px 0 0 var(--accent2)}.node.focused{outline:2px solid var(--acid);outline-offset:2px}.node-name{font:700 11px ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}.node-type{font:8px ui-monospace,SFMono-Regular,Consolas,monospace;color:#9ca8b7;margin-top:8px;text-transform:uppercase;letter-spacing:.1em}.node-mark{font:800 8px ui-monospace,SFMono-Regular,Consolas,monospace;margin-top:8px;color:#ff8d78}.edge-register{border-left:1px solid #364253;padding-left:18px}.edge-register h3{font:800 8px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;color:#8f9baa;margin:0 0 10px}.edge{display:grid;grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr);gap:6px;padding:8px 0;border-top:1px solid #2c3745;font:9px/1.35 ui-monospace,SFMono-Regular,Consolas,monospace;color:#b7c0cb}.edge b{color:var(--acid);text-align:center}.edge span{overflow-wrap:anywhere}
+.filterbar{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}.filter{border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:7px 10px;cursor:pointer;font:800 8px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.1em}.filter:hover{border-color:#8d9296}.filter.active{background:var(--accent);border-color:var(--accent);color:#fff}.clear-focus{margin-left:auto}
+.ledger{border-top:1px solid var(--line);overflow:hidden;background:var(--surface)}.change{display:grid;grid-template-columns:88px minmax(180px,.75fr) minmax(0,1.6fr);border-bottom:1px solid var(--line)}.change:hover{background:#f5f5ef}.change.hidden{display:none}.change-code{padding:16px 12px;border-right:1px solid var(--line);font:800 8px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.11em;color:var(--muted)}.change-code i{display:block;width:11px;height:11px;margin-bottom:10px;background:var(--accent)}.change.added .change-code i{background:var(--olive)}.change.removed .change-code i{background:var(--rose)}.change.modified .change-code i{background:var(--amber)}.change.moved .change-code i{background:#786ad9}
+.change-identity{padding:15px 16px;border-right:1px solid var(--line)}.change-identity code{font:700 12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}.change-identity .meta{margin-top:8px;color:var(--muted);font:9px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.08em}
+.evidence-line{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);color:var(--muted);font-size:10px}.evidence-line b{color:var(--text)}
+.values{display:grid;grid-template-columns:1fr 1fr}.value{padding:15px 17px;min-width:0}.value + .value{border-left:1px solid var(--line)}.value label{display:block;font:800 8px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}.value pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0 0;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--text)}.before{background:rgba(255,117,133,.04)}.after{background:rgba(90,200,193,.06)}
+.decision h2{font-size:20px;letter-spacing:-.03em;margin:0 0 12px}.decision-state{border-top:6px solid var(--accent);background:var(--surface);padding:18px;margin-bottom:18px;box-shadow:0 6px 22px var(--shadow)}.decision-state.warn{border-color:var(--amber)}.decision-state.stop{border-color:var(--rose)}.decision-state strong{display:block;font-size:21px;line-height:1.1;margin-bottom:9px}.decision-state p{margin:0;color:var(--muted);font-size:12px}.review-facts{border-top:1px solid #b9b8b1}.fact{display:grid;grid-template-columns:1fr auto;gap:12px;padding:11px 0;border-bottom:1px solid #c7c5bd;font-size:12px}.fact span{color:var(--muted)}.fact b{text-align:right}.review-note{margin-top:18px;padding:13px;background:#dcddd5;font-size:11px;line-height:1.5}.review-note b{display:block;margin-bottom:5px;font:800 8px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.12em;text-transform:uppercase}
+.empty,.error{padding:26px;border:1px solid var(--line);background:var(--surface);font:12px ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--muted)}.error{border-left:8px solid var(--rose);color:var(--text)}
+@media(max-width:1200px){.workspace{grid-template-columns:1fr}.decision-rail{border-left:0;border-top:1px solid var(--line)}.decision{position:static;display:grid;grid-template-columns:minmax(220px,.7fr) 1fr;gap:20px}.review-facts{border-top:0}.system-map{grid-template-columns:1fr}.edge-register{border-left:0;border-top:1px solid #364253;padding:18px 0 0}}
+@media(max-width:760px){main{grid-template-columns:1fr}aside{border-bottom:1px solid var(--line-dark);max-height:210px}.wordmark{padding:0 11px;font-size:9px;letter-spacing:.1em}.fileline{padding:0 10px}.status{min-width:78px;padding:0 8px;font-size:8px}.phasebar{grid-template-columns:repeat(2,1fr);position:static}.workspace{display:block}.review-main,.decision-rail{padding:20px 14px}.decision{display:block}.tape{grid-template-columns:repeat(2,1fr)!important}.metric{border-bottom:1px solid var(--line)}.change{grid-template-columns:70px 1fr}.change-identity{border-right:0}.values{grid-column:1/-1;border-top:1px solid var(--line)}}
 </style>
 </head>
 <body>
-<header><div class="wordmark"><i></i>MODEL / DELTA</div><div class="fileline"><strong>Change record</strong><div class="sub" id="source">Reading report</div></div><div class="status" id="status">loading</div></header>
+<header><div class="wordmark"><i></i>DRIFT / REVIEW</div><div class="fileline"><strong>Pull request model evidence</strong><div class="sub" id="source">Reading report</div></div><div class="status" id="status">loading</div></header>
 <main><aside><div class="index-title">Model index <b id="model-count">00</b></div><div id="models"></div></aside><section class="content" id="content"><div class="empty">Reading model evidence.</div></section></main>
 <script>
-let state=null, selected=null;
+let state=null, selected=null, changeFilter="all", pathFilter=null;
 const esc=(v)=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const known=(v)=>v!=null&&!["","unknown","not evaluated"].includes(String(v).toLowerCase());
 const pretty=(v,kind,side)=>v!=null?(typeof v==="string"?v:JSON.stringify(v,null,2)):((kind==="added"&&side==="before")||(kind==="removed"&&side==="after")?"not present":"not reported");
 function count(summary,key){return Number(summary?.[key]||0)}
-function choose(id){selected=id;render()}
+function choose(id){selected=id;changeFilter="all";pathFilter=null;render()}
+function setFilter(value){changeFilter=value;pathFilter=null;render()}
+function focusPath(value){pathFilter=pathFilter===value?null:value;render()}
+function filterChange(change){
+ if(pathFilter&&change.path!==pathFilter)return false;
+ if(changeFilter==="functional")return String(change.classification).includes("functional");
+ if(changeFilter==="interface")return change.category==="interface";
+ if(changeFilter==="structural")return ["block","system","connection","stateflow"].includes(change.category);
+ return true;
+}
 function render(){
  const source=document.getElementById("source"), status=document.getElementById("status"), models=document.getElementById("models"), content=document.getElementById("content");
  if(!state){return}
@@ -271,21 +332,33 @@ function render(){
  models.querySelectorAll("button").forEach(b=>b.onclick=()=>choose(b.dataset.id));
  const m=list.find(x=>x.id===selected); if(!m){content.innerHTML='<div class="empty">No changed models were found.</div>';return}
  const s=m.summary||{}, changes=m.changes||[], topology=m.topology||{};
+ const decision=m.review;
  const changedPaths=new Set(changes.map(c=>c.path));
  const nodes=(topology.blocks||[]).slice(0,14);
  const connections=(topology.connections||[]).filter(c=>c&&known(c.source)&&known(c.destination));
- const nodeMarkup=nodes.map(n=>'<div class="node '+(changedPaths.has(n.path)?"changed":"")+'"><div class="node-name">'+esc(n.name)+'</div>'+(known(n.type)?'<div class="node-type">'+esc(n.type)+'</div>':'')+(changedPaths.has(n.path)?'<div class="node-mark">REVISION POINT</div>':'')+'</div>').join("");
+ const nodeMarkup=nodes.map(n=>'<button class="node '+(changedPaths.has(n.path)?"changed ":"")+(pathFilter===n.path?"focused":"")+'" data-path="'+esc(n.path)+'"><div class="node-name">'+esc(n.name)+'</div>'+(known(n.type)?'<div class="node-type">'+esc(n.type)+'</div>':'')+(changedPaths.has(n.path)?'<div class="node-mark">HAS RECORDED DRIFT</div>':'')+'</button>').join("");
  const edgeMarkup=connections.map(c=>'<div class="edge"><span>'+esc(c.source)+'</span><b>→</b><span>'+esc(c.destination)+'</span></div>').join("");
  const rawMetrics=[["Added",count(s,"added")],["Removed",count(s,"removed")],["Modified",count(s,"modified")],["Moved",count(s,"moved")],["Interfaces",count(s,"interfaceChanges")]];
  const metrics=[["Revisions",changes.length],...rawMetrics.filter(x=>x[1]>0)];
  const route=known(m.basePath)&&known(m.headPath)?'<div class="route"><span>'+esc(m.basePath)+'</span><b></b><span>'+esc(m.headPath)+'</span></div>':(known(m.headPath)||known(m.basePath)?'<div class="route" style="display:block"><span>'+esc(m.headPath||m.basePath)+'</span></div>':'');
- const statusLines=[known(m.analysisStatus)?'<span>Analysis</span><strong>'+esc(m.analysisStatus)+'</strong>':'<strong>'+changes.length+'</strong><span>recorded revisions</span>',known(m.policyStatus)?'<small>Policy '+esc(m.policyStatus)+'</small>':''].join("");
  const topologySection=nodes.length?'<div class="sheet-label"><em>01</em> model inventory / '+nodes.length+' blocks'+(connections.length?' / '+connections.length+' connections':'')+'</div><section class="schematic"><div class="system-map"><div class="topology">'+nodeMarkup+'</div>'+(connections.length?'<div class="edge-register"><h3>Recorded connections</h3>'+edgeMarkup+'</div>':'')+'</div></section>':'';
  const ledgerNumber=nodes.length?"02":"01";
- content.innerHTML='<section class="folio"><div><div class="kicker">Engineering change record'+(known(m.changeType)?' / '+esc(m.changeType):'')+'</div><h1>'+esc(m.label)+'</h1>'+route+'</div><div class="stamp">'+statusLines+'</div></section>'+
+ const visible=changes.filter(filterChange);
+ const extractor=[...new Set(changes.map(c=>c.evidence?.extractor).filter(known))].join(", ");
+ const affected=new Set(changes.map(c=>c.path)).size;
+ const filters=[["all","All drift"],["functional","Functional"],["interface","Interfaces"],["structural","Structural"]];
+ const phaseTrust=String(m.analysisStatus).toLowerCase()==="complete"?"pass":decision.tone;
+ const phases='<div class="phasebar"><div class="phase '+phaseTrust+'"><b>01 / Trust</b>'+esc(known(m.analysisStatus)?m.analysisStatus:"not reported")+'</div><div class="phase"><b>02 / Scope</b>'+affected+' affected path'+(affected===1?"":"s")+'</div><div class="phase"><b>03 / Evidence</b>'+changes.length+' revision'+(changes.length===1?"":"s")+'</div><div class="phase '+decision.tone+'"><b>04 / Decision</b>'+esc(decision.title)+'</div></div>';
+ const filterbar=changes.length?'<div class="filterbar">'+filters.map(f=>'<button class="filter '+(changeFilter===f[0]&&!pathFilter?"active":"")+'" data-filter="'+f[0]+'">'+f[1]+'</button>').join("")+(pathFilter?'<button class="filter active clear-focus" data-clear-focus>Focused path ×</button>':'')+'</div>':'';
+ const ledger=visible.length?'<div class="ledger">'+visible.map((c,i)=>{const facts=[c.category,c.elementType,c.property,known(c.classification)?c.classification:null].filter(Boolean);const detail=c.evidence?.details&&typeof c.evidence.details==="object"?Object.entries(c.evidence.details).map(([k,v])=>esc(k)+": "+esc(v)).join(" · "):"";return '<article class="change '+esc(c.kind)+'"><div class="change-code"><i></i>'+String(i+1).padStart(2,"0")+' / '+esc(c.kind)+'</div><div class="change-identity"><code>'+esc(c.path)+'</code>'+(facts.length?'<div class="meta">'+facts.map(esc).join(" / ")+'</div>':'')+(detail?'<div class="evidence-line"><b>Evidence</b> '+detail+'</div>':'')+'</div><div class="values"><div class="value before"><label>Previous state</label><pre>'+esc(pretty(c.before,c.kind,"before"))+'</pre></div><div class="value after"><label>Revised state</label><pre>'+esc(pretty(c.after,c.kind,"after"))+'</pre></div></div></article>'}).join("")+'</div>':(changes.length?'<div class="empty">No revisions match the current focus.</div>':'<div class="empty">No revisions are recorded for this model.</div>');
+ const decisionFacts=[["Analysis",known(m.analysisStatus)?m.analysisStatus:"not reported"],...(known(m.policyStatus)?[["Policy",m.policyStatus]]:[]),["Affected paths",affected],["Topology",nodes.length?nodes.length+" blocks":"not supplied"],...(extractor?[["Evidence source",extractor]]:[])];
+ const decisionPanel='<aside class="decision-rail"><div class="decision"><h2>Merge assessment</h2><div class="decision-state '+decision.tone+'"><strong>'+esc(decision.title)+'</strong><p>'+esc(decision.detail)+'</p></div><div class="review-facts">'+decisionFacts.map(f=>'<div class="fact"><span>'+esc(f[0])+'</span><b>'+esc(f[1])+'</b></div>').join("")+'</div><div class="review-note"><b>Workflow position</b>Use this review after CI creates the drift artifact and before approving the pull request. The canvas presents evidence; repository policy remains authoritative.</div></div></aside>';
+ content.innerHTML=phases+'<div class="workspace"><div class="review-main"><section class="folio"><div class="kicker">Model change under review'+(known(m.changeType)?' / '+esc(m.changeType):'')+'</div><h1>'+esc(m.label)+'</h1>'+route+'</section>'+
  '<div class="tape" style="grid-template-columns:repeat('+metrics.length+',minmax(0,1fr))">'+metrics.map(x=>'<div class="metric"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>').join("")+'</div>'+
- topologySection+'<div class="sheet-label"><em>'+ledgerNumber+'</em> revision ledger / '+changes.length+' entries</div>'+
- (changes.length?'<div class="ledger">'+changes.map((c,i)=>{const facts=[c.category,c.elementType,c.property,known(c.classification)?c.classification:null].filter(Boolean);return '<article class="change '+esc(c.kind)+'"><div class="change-code"><i></i>'+String(i+1).padStart(2,"0")+' / '+esc(c.kind)+'</div><div class="change-identity"><code>'+esc(c.path)+'</code>'+(facts.length?'<div class="meta">'+facts.map(esc).join(" / ")+'</div>':'')+'</div><div class="values"><div class="value before"><label>Previous state</label><pre>'+esc(pretty(c.before,c.kind,"before"))+'</pre></div><div class="value after"><label>Revised state</label><pre>'+esc(pretty(c.after,c.kind,"after"))+'</pre></div></div></article>'}).join("")+'</div>':'<div class="empty">No revisions are recorded for this model.</div>');
+ topologySection+'<div class="sheet-label"><em>'+ledgerNumber+'</em> inspect evidence / '+visible.length+' of '+changes.length+' shown</div>'+filterbar+ledger+'</div>'+decisionPanel+'</div>';
+ content.querySelectorAll("[data-filter]").forEach(button=>button.onclick=()=>setFilter(button.dataset.filter));
+ content.querySelectorAll("[data-path]").forEach(button=>button.onclick=()=>focusPath(button.dataset.path));
+ const clear=content.querySelector("[data-clear-focus]");if(clear)clear.onclick=()=>{pathFilter=null;render()};
 }
 async function refresh(){try{const r=await fetch("/api/state",{cache:"no-store"});state=await r.json();render()}catch(e){state={error:e.message};render()}}
 refresh();setInterval(refresh,1500);

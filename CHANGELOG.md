@@ -18,12 +18,16 @@ All notable user-visible changes are documented here. The project follows Semant
 - Reframed the product, onboarding, architecture, security, and runner guidance around automatic pull-request model drift analysis.
 - Replaced pair-oriented action inputs and outputs with the upcoming `v0.3.0` PR contract. This is a breaking action-interface change from `v0.2.0`.
 - Updated first-party GitHub Actions dependencies to their Node.js 24-compatible v7 releases.
-- Reworked the Copilot canvas as an engineering change sheet with drafting-grid
-  typography, signal-flow topology, revision stamps, and a compact before/after
-  ledger instead of a generic dashboard layout. Sections now size themselves
-  from the report data, omit unavailable policy and metadata fields, distinguish
-  absent values from unreported values, and list only explicit model
-  connections rather than inferring a route from block order.
+- Reworked the Copilot canvas as a technical review station with a dark model
+  queue, light evidence workspace, instrument-style impact map, and compact
+  before/after ledger. Sections size themselves from the report data, omit
+  unavailable policy and metadata fields, distinguish absent values from
+  unreported values, and list only explicit model connections rather than
+  inferring a route from block order.
+- Reframed the canvas around the pull-request review workflow: trust the
+  extraction, establish impact, filter evidence, and reach a merge assessment.
+  The review station now flags partial or failed analysis as a required next
+  action instead of presenting every loaded report as decision-ready.
 
 ## 0.2.0 - 2026-09-29
 

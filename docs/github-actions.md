@@ -50,6 +50,30 @@ Use `contents: read` only when `upload-sarif` is false. GitHub does not let a ca
 
 The workflow outputs `output`, `index-json`, `summary-markdown`, `sarif`, and `exit-code`.
 
+## Review the artifact in Copilot
+
+The reusable workflow produces evidence; it does not make the final engineering
+decision. After downloading or generating the report directory locally, open
+the aggregate index in Copilot CLI:
+
+```text
+Open the Simulink Model Diff canvas for build/model-drift/model-drift-index.json
+```
+
+The canvas is intended for the review phase after CI and before pull-request
+approval. Its trust, scope, evidence, and decision stages help a reviewer:
+
+- recognize incomplete extraction before relying on the result;
+- move between every changed model in the pull request;
+- focus the ledger by functional, interface, structural, or model-path scope;
+- compare recorded values and evidence details;
+- determine whether the next action is approval, model-owner review, policy
+  remediation, or a qualified extraction run.
+
+The canvas never writes a review, changes a check result, or elevates
+permissions. GitHub branch protection and the configured policy threshold
+remain authoritative.
+
 ## Composite action inputs and outputs
 
 The root action accepts the same analysis inputs except artifact retention and SARIF upload. Its deterministic outputs are:
