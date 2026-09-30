@@ -20,7 +20,10 @@ All notable user-visible changes are documented here. The project follows Semant
 - Updated first-party GitHub Actions dependencies to their Node.js 24-compatible v7 releases.
 - Reworked the Copilot canvas as an engineering change sheet with drafting-grid
   typography, signal-flow topology, revision stamps, and a compact before/after
-  ledger instead of a generic dashboard layout.
+  ledger instead of a generic dashboard layout. Sections now size themselves
+  from the report data, omit unavailable policy and metadata fields, distinguish
+  absent values from unreported values, and list only explicit model
+  connections rather than inferring a route from block order.
 
 ## 0.2.0 - 2026-09-29
 
