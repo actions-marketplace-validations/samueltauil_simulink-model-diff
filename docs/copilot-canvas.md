@@ -39,6 +39,51 @@ This is the shortcut that makes the canvas useful in a pull request review:
 This is the practical benefit. You are not reading a JSON dump. You are looking
 at a review workflow designed around trust, scope, evidence, and decision.
 
+## PR review demo
+
+You can run the demo without creating a pull request or downloading a workflow
+artifact. Open this repository in the Copilot app and send:
+
+```text
+Open the Simulink Model Diff canvas for samples/cardiac-digital-twin/drift.json
+```
+
+The checked-in report models a beta-blocker dose change from 50 mg to 60 mg.
+Its extraction status is intentionally `partial`, so the demo shows how the
+canvas handles useful but incomplete evidence rather than presenting a false
+clean result.
+
+1. Read the trust card first. The canvas reports `partial` and tells you the
+   reviewer should not treat the report as clean approval.
+2. Move to the model queue and find the affected path. The reviewer can see the
+   exact model under change without opening the raw JSON.
+3. Inspect the impact map. It shows the blocks and connections the report lists
+   as changed, with no invented geometry or guesswork.
+4. Open the evidence section and compare the before/after values for the
+   changed parameter or block.
+5. Confirm the decision card. In a partial report, the result is a qualified
+   extraction needed; the analyst can ask the approved extractor to re-run and
+   refresh the canvas.
+
+Continue the demo from the agent conversation:
+
+```text
+The report is partial. Show me the model path that changed and explain why the extraction is not clean.
+Focus on the dose parameter change and compare the before and after values.
+Select the changed cardiac model in the canvas.
+```
+
+The value is not that the canvas creates a review decision by itself. The value
+is that it turns a noisy artifact into a guided inspection. Trust, scope,
+proof, and decision stay in the same view as the PR discussion.
+
+For a real pull request, replace the sample path with the downloaded Action
+artifact:
+
+```text
+Open the Simulink Model Diff canvas for build/model-drift/model-drift-index.json
+```
+
 ## Install
 
 The extension is committed to this repository at
