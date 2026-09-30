@@ -1,0 +1,42 @@
+{
+  "$schema": "../../src/model_drift/schemas/canonical-model.schema.json",
+  "schemaVersion": "0.1.0",
+  "generator": {"name": "cardiac-digital-twin-sample", "version": "1.0.0", "strategy": "source-derived-canonical-snapshot"},
+  "source": {"artifact": "model/CardiacDigitalTwin.slx", "artifactSha256": "0000000000000000000000000000000000000000000000000000000000000000", "simulinkRelease": "R2023a-or-later"},
+  "analysis": {"status": "partial", "warnings": ["Source-derived snapshot from the public cardiac-digital-twin MATLAB builder.", "Run a licensed Simulink extractor to qualify compiled attributes and exact artifact digest."], "unsupportedFeatures": ["compiled-port-attributes", "runtime-artifact-digest"]},
+  "model": {"name": "CardiacDigitalTwin", "modelType": "model", "rootPath": "CardiacDigitalTwin"},
+  "interfaces": {"inports": [], "outports": [], "triggerPorts": [], "enablePorts": [], "buses": []},
+  "systems": [
+    {"id": "system:CardiacDigitalTwin/BetaBlockerPK", "path": "CardiacDigitalTwin/BetaBlockerPK", "name": "BetaBlockerPK", "systemType": "subsystem"},
+    {"id": "system:CardiacDigitalTwin/HeartRateModel", "path": "CardiacDigitalTwin/HeartRateModel", "name": "HeartRateModel", "systemType": "subsystem"},
+    {"id": "system:CardiacDigitalTwin/CardiacOutputModel", "path": "CardiacDigitalTwin/CardiacOutputModel", "name": "CardiacOutputModel", "systemType": "subsystem"},
+    {"id": "system:CardiacDigitalTwin/BloodPressureModel", "path": "CardiacDigitalTwin/BloodPressureModel", "name": "BloodPressureModel", "systemType": "subsystem"},
+    {"id": "system:CardiacDigitalTwin/BaroreflexController", "path": "CardiacDigitalTwin/BaroreflexController", "name": "BaroreflexController", "systemType": "subsystem"}
+  ],
+  "blocks": [
+    {"id": "block:CardiacDigitalTwin/BetaBlockerDose", "path": "CardiacDigitalTwin/BetaBlockerDose", "name": "BetaBlockerDose", "blockType": "Constant", "parent": "CardiacDigitalTwin", "ports": {"inputs": 0, "outputs": 1}, "reference": "simulink/Sources/Constant", "parameters": {"Value": {"value": "60", "valueType": "expression"}}},
+    {"id": "block:CardiacDigitalTwin/BetaBlockerPK", "path": "CardiacDigitalTwin/BetaBlockerPK", "name": "BetaBlockerPK", "blockType": "Subsystem", "parent": "CardiacDigitalTwin", "ports": {"inputs": 1, "outputs": 1}, "reference": null, "parameters": {"architecture": {"value": "first-order pharmacokinetic transfer function", "valueType": "description"}}},
+    {"id": "block:CardiacDigitalTwin/HeartRateModel", "path": "CardiacDigitalTwin/HeartRateModel", "name": "HeartRateModel", "blockType": "Subsystem", "parent": "CardiacDigitalTwin", "ports": {"inputs": 2, "outputs": 1}, "reference": null, "parameters": {"architecture": {"value": "baseline - Hill/Emax drug effect + baroreflex correction", "valueType": "description"}}},
+    {"id": "block:CardiacDigitalTwin/HeartRateModel/HillEquation", "path": "CardiacDigitalTwin/HeartRateModel/HillEquation", "name": "HillEquation", "blockType": "Fcn", "parent": "CardiacDigitalTwin/HeartRateModel", "ports": {"inputs": 1, "outputs": 1}, "reference": "simulink/User-Defined Functions/Fcn", "parameters": {"Expr": {"value": "emax_bpm*u^hill_n/(ec50_mg^hill_n + u^hill_n)", "valueType": "expression"}}},
+    {"id": "block:CardiacDigitalTwin/HeartRateModel/HRClamp", "path": "CardiacDigitalTwin/HeartRateModel/HRClamp", "name": "HRClamp", "blockType": "Saturation", "parent": "CardiacDigitalTwin/HeartRateModel", "ports": {"inputs": 1, "outputs": 1}, "reference": "simulink/Discontinuities/Saturation", "parameters": {"LowerLimit": {"value": "40", "valueType": "expression"}, "UpperLimit": {"value": "180", "valueType": "expression"}}},
+    {"id": "block:CardiacDigitalTwin/CardiacOutputModel", "path": "CardiacDigitalTwin/CardiacOutputModel", "name": "CardiacOutputModel", "blockType": "Subsystem", "parent": "CardiacDigitalTwin", "ports": {"inputs": 1, "outputs": 1}, "reference": null, "parameters": {"equation": {"value": "CO = HR * SV / 1000", "valueType": "description"}}},
+    {"id": "block:CardiacDigitalTwin/CardiacOutputModel/StrokeVolume", "path": "CardiacDigitalTwin/CardiacOutputModel/StrokeVolume", "name": "StrokeVolume", "blockType": "Constant", "parent": "CardiacDigitalTwin/CardiacOutputModel", "ports": {"inputs": 0, "outputs": 1}, "reference": "simulink/Sources/Constant", "parameters": {"Value": {"value": "stroke_volume_mL", "valueType": "expression"}}},
+    {"id": "block:CardiacDigitalTwin/BloodPressureModel", "path": "CardiacDigitalTwin/BloodPressureModel", "name": "BloodPressureModel", "blockType": "Subsystem", "parent": "CardiacDigitalTwin", "ports": {"inputs": 1, "outputs": 1}, "reference": null, "parameters": {"equation": {"value": "MAP = CO * SVR", "valueType": "description"}}},
+    {"id": "block:CardiacDigitalTwin/BaroreflexController", "path": "CardiacDigitalTwin/BaroreflexController", "name": "BaroreflexController", "blockType": "Subsystem", "parent": "CardiacDigitalTwin", "ports": {"inputs": 1, "outputs": 1}, "reference": null, "parameters": {"equation": {"value": "HR correction = gain * (MAP setpoint - MAP)", "valueType": "description"}}},
+    {"id": "block:CardiacDigitalTwin/HeartRateScope", "path": "CardiacDigitalTwin/HeartRateScope", "name": "HeartRateScope", "blockType": "Scope", "parent": "CardiacDigitalTwin", "ports": {"inputs": 1, "outputs": 0}, "reference": "simulink/Sinks/Scope", "parameters": {}},
+    {"id": "block:CardiacDigitalTwin/CardiacOutputScope", "path": "CardiacDigitalTwin/CardiacOutputScope", "name": "CardiacOutputScope", "blockType": "Scope", "parent": "CardiacDigitalTwin", "ports": {"inputs": 1, "outputs": 0}, "reference": "simulink/Sinks/Scope", "parameters": {}},
+    {"id": "block:CardiacDigitalTwin/BloodPressureScope", "path": "CardiacDigitalTwin/BloodPressureScope", "name": "BloodPressureScope", "blockType": "Scope", "parent": "CardiacDigitalTwin", "ports": {"inputs": 1, "outputs": 0}, "reference": "simulink/Sinks/Scope", "parameters": {}}
+  ],
+  "connections": [
+    {"id": "line:dose-pk", "source": {"blockId": "block:CardiacDigitalTwin/BetaBlockerDose", "port": 1}, "destination": {"blockId": "block:CardiacDigitalTwin/BetaBlockerPK", "port": 1}, "signal": {"name": "dose", "dataType": "double", "dimensions": [1], "unit": "mg"}},
+    {"id": "line:pk-hr", "source": {"blockId": "block:CardiacDigitalTwin/BetaBlockerPK", "port": 1}, "destination": {"blockId": "block:CardiacDigitalTwin/HeartRateModel", "port": 1}, "signal": {"name": "concentration", "dataType": "double", "dimensions": [1], "unit": "mg"}},
+    {"id": "line:hr-co", "source": {"blockId": "block:CardiacDigitalTwin/HeartRateModel", "port": 1}, "destination": {"blockId": "block:CardiacDigitalTwin/CardiacOutputModel", "port": 1}, "signal": {"name": "heart rate", "dataType": "double", "dimensions": [1], "unit": "bpm"}},
+    {"id": "line:co-bp", "source": {"blockId": "block:CardiacDigitalTwin/CardiacOutputModel", "port": 1}, "destination": {"blockId": "block:CardiacDigitalTwin/BloodPressureModel", "port": 1}, "signal": {"name": "cardiac output", "dataType": "double", "dimensions": [1], "unit": "L/min"}},
+    {"id": "line:bp-baro", "source": {"blockId": "block:CardiacDigitalTwin/BloodPressureModel", "port": 1}, "destination": {"blockId": "block:CardiacDigitalTwin/BaroreflexController", "port": 1}, "signal": {"name": "MAP feedback", "dataType": "double", "dimensions": [1], "unit": "mmHg"}},
+    {"id": "line:baro-hr", "source": {"blockId": "block:CardiacDigitalTwin/BaroreflexController", "port": 1}, "destination": {"blockId": "block:CardiacDigitalTwin/HeartRateModel", "port": 2}, "signal": {"name": "baroreflex correction", "dataType": "double", "dimensions": [1], "unit": "bpm"}}
+  ],
+  "stateflow": {"charts": [], "states": [], "transitions": [], "junctions": [], "events": [], "data": []},
+  "configuration": {"solver": "ode45", "stopTime": "3600", "maxStep": "10", "solverType": "Variable-step"},
+  "references": {"models": [], "libraries": [], "dataDictionaries": [], "requirements": []},
+  "fingerprints": {"model": "0000000000000000000000000000000000000000000000000000000000000000", "structure": "0000000000000000000000000000000000000000000000000000000000000000", "interfaces": "0000000000000000000000000000000000000000000000000000000000000000", "parameters": "0000000000000000000000000000000000000000000000000000000000000000", "stateflow": "0000000000000000000000000000000000000000000000000000000000000000", "configuration": "0000000000000000000000000000000000000000000000000000000000000000"}
+}

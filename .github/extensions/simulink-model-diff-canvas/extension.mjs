@@ -60,6 +60,7 @@ function normalizeChange(change) {
 }
 
 function driftModel(id, label, drift, record = {}) {
+    const topology = drift?.topology || drift || {};
     return {
         id,
         label,
@@ -71,6 +72,17 @@ function driftModel(id, label, drift, record = {}) {
         summary: record.summary || drift?.summary || {},
         findingCounts: record.findingCounts || {},
         changes: Array.isArray(drift?.changes) ? drift.changes.map(normalizeChange) : [],
+        topology: {
+            blocks: Array.isArray(topology.blocks)
+                ? topology.blocks.map((block) => ({
+                      id: String(block.id || block.path || "block"),
+                      name: String(block.name || block.path || "block"),
+                      type: String(block.blockType || "Block"),
+                      path: String(block.path || block.name || "block"),
+                  }))
+                : [],
+            connections: Array.isArray(topology.connections) ? topology.connections : [],
+        },
     };
 }
 
@@ -100,6 +112,33 @@ async function loadReport(workingDirectory, reportPath) {
             headRef: document.headRef || document.headCommit || null,
             summary: document.summary || {},
             models,
+        };
+    }
+
+    if (
+        document.model &&
+        Array.isArray(document.blocks) &&
+        Array.isArray(document.connections)
+    ) {
+        const label = String(document.model.name || candidate.split(/[\\/]/).pop());
+        return {
+            source: candidate,
+            kind: "canonical",
+            status: String(document.analysis?.status || "unknown"),
+            baseRef: null,
+            headRef: document.source?.artifact || null,
+            summary: {
+                added: 0,
+                removed: 0,
+                modified: 0,
+                moved: 0,
+                interfaceChanges: 0,
+            },
+            models: [driftModel("canonical", label, document, {
+                changeType: "snapshot",
+                analysisStatus: document.analysis?.status,
+                policyStatus: "not evaluated",
+            })],
         };
     }
 
@@ -186,24 +225,24 @@ function renderHtml() {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Simulink Model Drift</title>
 <style>
-:root{color-scheme:light dark;--bg:#0d1117;--panel:#161b22;--line:#30363d;--text:#e6edf3;--muted:#8b949e;--blue:#58a6ff;--green:#3fb950;--red:#f85149;--amber:#d29922;--violet:#a371f7}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-header{display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:1px solid var(--line);background:#010409;position:sticky;top:0;z-index:4}
-h1{font-size:18px;margin:0}.sub{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.status{margin-left:auto;border:1px solid var(--line);border-radius:999px;padding:3px 9px;text-transform:capitalize}
-main{display:grid;grid-template-columns:280px minmax(0,1fr);min-height:calc(100vh - 58px)}aside{border-right:1px solid var(--line);padding:14px;overflow:auto}
-.model{display:block;width:100%;text-align:left;color:var(--text);background:transparent;border:1px solid transparent;border-radius:7px;padding:10px;margin-bottom:6px;cursor:pointer}
-.model:hover,.model.active{background:#21262d;border-color:var(--line)}.model small{display:block;color:var(--muted);margin-top:4px}
-.content{padding:20px;overflow:auto}.cards{display:grid;grid-template-columns:repeat(5,minmax(105px,1fr));gap:10px;margin:14px 0 20px}.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px}.card b{display:block;font-size:22px}.card span{color:var(--muted)}
-.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.pill{border:1px solid var(--line);border-radius:999px;padding:3px 8px;color:var(--muted)}
-.changes{display:grid;gap:10px}.change{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--blue);border-radius:8px;padding:13px}.change.added{border-left-color:var(--green)}.change.removed{border-left-color:var(--red)}.change.moved{border-left-color:var(--violet)}.change.modified{border-left-color:var(--amber)}
-.change-head{display:flex;align-items:center;gap:8px}.change-head code{font-weight:700;color:var(--text);overflow-wrap:anywhere}.kind{text-transform:uppercase;font-size:11px;font-weight:700}.meta{color:var(--muted);margin-top:5px}
-.values{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.value{background:#0d1117;border:1px solid var(--line);border-radius:6px;padding:8px;overflow:auto}.value label{display:block;color:var(--muted);font-size:11px;text-transform:uppercase}.value pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:5px 0 0;font:12px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace}
-.empty,.error{padding:24px;border:1px dashed var(--line);border-radius:8px;color:var(--muted)}.error{color:#ff7b72;border-color:var(--red)}
-@media(max-width:850px){main{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}.cards{grid-template-columns:repeat(2,1fr)}}
+:root{color-scheme:dark;--bg:#080b12;--panel:#111827;--panel2:#0d1422;--line:#26334a;--text:#eef4ff;--muted:#93a4bd;--blue:#57a6ff;--green:#42d392;--red:#ff6b7a;--amber:#f2bd5d;--violet:#b98cff;--cyan:#63e6e2}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 75% -10%,#172b4c 0,#080b12 38rem);color:var(--text);font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+header{display:flex;align-items:center;gap:14px;padding:15px 22px;border-bottom:1px solid var(--line);background:rgba(8,11,18,.84);backdrop-filter:blur(16px);position:sticky;top:0;z-index:4}
+h1{font-size:17px;letter-spacing:.01em;margin:0}.mark{width:28px;height:28px;border:1px solid #38577d;border-radius:9px;background:linear-gradient(135deg,#1c416a,#17203a);display:grid;place-items:center;color:var(--cyan);font-weight:800}.sub{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.status{margin-left:auto;border:1px solid #38577d;background:#102138;border-radius:999px;padding:4px 10px;text-transform:capitalize;color:#b8d8ff}
+main{display:grid;grid-template-columns:285px minmax(0,1fr);min-height:calc(100vh - 59px)}aside{border-right:1px solid var(--line);padding:18px 14px;overflow:auto;background:rgba(8,11,18,.35)}
+.eyebrow{color:var(--cyan);font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:6px}.model{display:block;width:100%;text-align:left;color:var(--text);background:transparent;border:1px solid transparent;border-radius:10px;padding:11px 12px;margin:9px 0;cursor:pointer;transition:.16s}
+.model:hover,.model.active{background:linear-gradient(100deg,#172943,#121b2b);border-color:#355074;box-shadow:0 7px 24px rgba(0,0,0,.18)}.model small{display:block;color:var(--muted);margin-top:5px}.model.active small{color:#a9d0ff}
+.content{padding:28px 30px;overflow:auto;max-width:1320px;width:100%;margin:auto}.hero{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}.hero h2{font-size:27px;letter-spacing:-.025em;margin:0}.hero .meta{max-width:650px}.cards{display:grid;grid-template-columns:repeat(5,minmax(105px,1fr));gap:10px;margin:22px 0}.card{background:linear-gradient(145deg,rgba(24,36,57,.92),rgba(13,20,34,.92));border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:0 10px 28px rgba(0,0,0,.14)}.card b{display:block;font-size:25px;letter-spacing:-.04em}.card span{color:var(--muted);font-size:12px}
+.pill{border:1px solid #385074;border-radius:999px;padding:4px 9px;color:#bcd7f5;background:#101d30;font-size:12px}.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.meta{color:var(--muted);margin-top:6px}.route{display:flex;gap:10px;align-items:center;color:#b5c8e4;font:12px ui-monospace,SFMono-Regular,Consolas,monospace}.route .arrow{color:var(--cyan);font-size:18px}
+.map{background:linear-gradient(145deg,rgba(16,28,47,.9),rgba(11,17,29,.96));border:1px solid var(--line);border-radius:15px;padding:18px;margin:8px 0 22px;box-shadow:0 16px 42px rgba(0,0,0,.2)}.map-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.map-head strong{font-size:13px}.map-head span{color:var(--muted);font-size:12px}.topology{display:flex;align-items:center;gap:8px;overflow:auto;padding:12px 4px 16px}.node{min-width:145px;padding:11px 12px;border:1px solid #365477;border-radius:11px;background:#13233a;position:relative}.node.changed{border-color:var(--amber);box-shadow:0 0 0 1px rgba(242,189,93,.2),0 0 22px rgba(242,189,93,.13)}.node-name{font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.node-type{color:var(--muted);font-size:11px;margin-top:4px}.node-mark{color:var(--amber);font-size:11px;margin-top:6px}.connector{height:1px;min-width:27px;background:linear-gradient(90deg,#365477,var(--cyan));position:relative}.connector:after{content:"›";color:var(--cyan);position:absolute;right:-2px;top:-10px;font-size:18px}
+.changes{display:grid;gap:12px}.change{background:linear-gradient(145deg,rgba(19,29,46,.96),rgba(13,19,32,.96));border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:12px;padding:15px;box-shadow:0 8px 26px rgba(0,0,0,.14)}.change.added{border-left-color:var(--green)}.change.removed{border-left-color:var(--red)}.change.moved{border-left-color:var(--violet)}.change.modified{border-left-color:var(--amber)}.change.unresolved{border-left-color:var(--violet)}
+.change-head{display:flex;align-items:center;gap:9px}.change-head code{font-weight:750;color:var(--text);overflow-wrap:anywhere}.kind{text-transform:uppercase;font-size:10px;letter-spacing:.1em;font-weight:800}.values{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.value{background:#090e18;border:1px solid #263952;border-radius:9px;padding:10px;overflow:auto}.value label{display:block;color:var(--muted);font-size:10px;letter-spacing:.1em;text-transform:uppercase}.value pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0 0;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;color:#cfe2ff}
+.empty,.error{padding:28px;border:1px dashed #3a4f6d;border-radius:12px;color:var(--muted);background:rgba(15,24,39,.62)}.error{color:#ff9aa5;border-color:var(--red)}
+@media(max-width:850px){main{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}.content{padding:22px 16px}.cards{grid-template-columns:repeat(2,1fr)}.hero{display:block}.values{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<header><h1>Simulink Model Drift</h1><div class="sub" id="source">Loading report…</div><div class="status" id="status">loading</div></header>
+<header><div class="mark">Δ</div><h1>Simulink Model Diff</h1><div class="sub" id="source">Loading report…</div><div class="status" id="status">loading</div></header>
 <main><aside><strong>Changed models</strong><div id="models"></div></aside><section class="content" id="content"><div class="empty">Loading visual diff…</div></section></main>
 <script>
 let state=null, selected=null;
@@ -221,10 +260,13 @@ function render(){
  models.innerHTML=list.map(m=>'<button class="model '+(m.id===selected?"active":"")+'" data-id="'+esc(m.id)+'">'+esc(m.label)+'<small>'+esc(m.changeType)+' · '+esc(m.analysisStatus)+'</small></button>').join("");
  models.querySelectorAll("button").forEach(b=>b.onclick=()=>choose(b.dataset.id));
  const m=list.find(x=>x.id===selected); if(!m){content.innerHTML='<div class="empty">No changed models were found.</div>';return}
- const s=m.summary||{}, changes=m.changes||[];
- content.innerHTML='<div class="toolbar"><h2 style="margin:0">'+esc(m.label)+'</h2><span class="pill">analysis: '+esc(m.analysisStatus)+'</span><span class="pill">policy: '+esc(m.policyStatus)+'</span></div>'+
- '<div class="meta">'+esc(m.basePath||"∅")+' → '+esc(m.headPath||"∅")+'</div>'+
+ const s=m.summary||{}, changes=m.changes||[], topology=m.topology||{};
+ const changedPaths=new Set(changes.map(c=>c.path));
+ const nodes=(topology.blocks||[]).slice(0,14);
+ const nodeMarkup=nodes.length?nodes.map((n,i)=>(i?'<span class="connector"></span>':'')+'<div class="node '+(changedPaths.has(n.path)?"changed":"")+'"><div class="node-name">'+esc(n.name)+'</div><div class="node-type">'+esc(n.type)+'</div>'+(changedPaths.has(n.path)?'<div class="node-mark">● changed</div>':'')+'</div>').join(""):'<div class="empty" style="width:100%">Topology is available when a canonical manifest is loaded. Changed elements are still visualized below.</div>';
+ content.innerHTML='<div class="hero"><div><div class="eyebrow">Review surface</div><h2>'+esc(m.label)+'</h2><div class="route"><span>'+esc(m.basePath||"snapshot")+'</span><span class="arrow">→</span><span>'+esc(m.headPath||"snapshot")+'</span></div></div><div class="toolbar"><span class="pill">analysis: '+esc(m.analysisStatus)+'</span><span class="pill">policy: '+esc(m.policyStatus)+'</span></div></div>'+
  '<div class="cards">'+[["Added",count(s,"added")],["Removed",count(s,"removed")],["Modified",count(s,"modified")],["Moved",count(s,"moved")],["Interfaces",count(s,"interfaceChanges")]].map(x=>'<div class="card"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>').join("")+'</div>'+
+ '<section class="map"><div class="map-head"><strong>Model topology</strong><span>'+nodes.length+' structural elements'+(topology.connections?.length?' · '+topology.connections.length+' connections':'')+'</span></div><div class="topology">'+nodeMarkup+'</div></section>'+
  (changes.length?'<div class="changes">'+changes.map(c=>'<article class="change '+esc(c.kind)+'"><div class="change-head"><span class="kind">'+esc(c.kind)+'</span><code>'+esc(c.path)+'</code></div><div class="meta">'+esc(c.category)+' · '+esc(c.elementType)+(c.property?' · '+esc(c.property):'')+' · '+esc(c.classification)+'</div><div class="values"><div class="value"><label>Before</label><pre>'+esc(pretty(c.before))+'</pre></div><div class="value"><label>After</label><pre>'+esc(pretty(c.after))+'</pre></div></div></article>').join("")+'</div>':'<div class="empty">No semantic changes were reported for this model.</div>');
 }
 async function refresh(){try{const r=await fetch("/api/state",{cache:"no-store"});state=await r.json();render()}catch(e){state={error:e.message};render()}}

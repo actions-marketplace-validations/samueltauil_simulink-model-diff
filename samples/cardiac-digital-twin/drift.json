@@ -1,0 +1,47 @@
+{
+  "$schema": "./drift-manifest.schema.json",
+  "schemaVersion": "0.1.0",
+  "comparison": {
+    "baseArtifact": "samples/cardiac-digital-twin/baseline.model.json",
+    "targetArtifact": "samples/cardiac-digital-twin/dose-60mg.model.json",
+    "status": "partial"
+  },
+  "summary": {"added": 0, "removed": 0, "modified": 1, "moved": 0, "interfaceChanges": 0},
+  "topology": {
+    "blocks": [
+      {"id": "block:CardiacDigitalTwin/BetaBlockerDose", "name": "BetaBlockerDose", "blockType": "Constant", "path": "CardiacDigitalTwin/BetaBlockerDose"},
+      {"id": "block:CardiacDigitalTwin/BetaBlockerPK", "name": "BetaBlockerPK", "blockType": "Subsystem", "path": "CardiacDigitalTwin/BetaBlockerPK"},
+      {"id": "block:CardiacDigitalTwin/HeartRateModel", "name": "HeartRateModel", "blockType": "Subsystem", "path": "CardiacDigitalTwin/HeartRateModel"},
+      {"id": "block:CardiacDigitalTwin/CardiacOutputModel", "name": "CardiacOutputModel", "blockType": "Subsystem", "path": "CardiacDigitalTwin/CardiacOutputModel"},
+      {"id": "block:CardiacDigitalTwin/BloodPressureModel", "name": "BloodPressureModel", "blockType": "Subsystem", "path": "CardiacDigitalTwin/BloodPressureModel"},
+      {"id": "block:CardiacDigitalTwin/BaroreflexController", "name": "BaroreflexController", "blockType": "Subsystem", "path": "CardiacDigitalTwin/BaroreflexController"}
+    ],
+    "connections": [
+      {"source": "BetaBlockerDose", "destination": "BetaBlockerPK"},
+      {"source": "BetaBlockerPK", "destination": "HeartRateModel"},
+      {"source": "HeartRateModel", "destination": "CardiacOutputModel"},
+      {"source": "CardiacOutputModel", "destination": "BloodPressureModel"},
+      {"source": "BloodPressureModel", "destination": "BaroreflexController"},
+      {"source": "BaroreflexController", "destination": "HeartRateModel"}
+    ]
+  },
+  "changes": [
+    {
+      "changeId": "chg-cardiac-dose-20pct",
+      "elementId": "block:CardiacDigitalTwin/BetaBlockerDose",
+      "elementType": "block",
+      "modelPath": "CardiacDigitalTwin/BetaBlockerDose",
+      "category": "parameter",
+      "kind": "modified",
+      "property": "parameters.Value.value",
+      "before": "50",
+      "after": "60",
+      "functionalClassification": "potentially-functional",
+      "match": {"confidence": 1.0, "strategy": "stable-id"},
+      "evidence": {
+        "extractor": "cardiac-digital-twin-source-snapshot",
+        "details": {"scenario": "20% beta-blocker dose increase", "unit": "mg"}
+      }
+    }
+  ]
+}

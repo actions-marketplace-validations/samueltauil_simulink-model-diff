@@ -150,6 +150,22 @@ simulink-model-drift analyze \
 
 The lower-level `analyze`, `compare`, `validate`, `doctor`, `schema`, and `fingerprint` commands are documented in [the CLI guide](docs/cli.md). Pair-oriented output names and contracts belong to those interfaces; PR analysis uses the aggregate files listed above.
 
+## Real-world sample models
+
+The [`samples/`](samples/) directory includes a richer cardiac digital twin
+scenario based on the public
+[`samueltauil/cardiac-digital-twin`](https://github.com/samueltauil/cardiac-digital-twin)
+project. It includes the reproducible MATLAB builder sources and canonical
+baseline/target snapshots for the documented 50 mg → 60 mg beta-blocker
+scenario. The sample is intentionally marked `partial` until a licensed
+Simulink extractor qualifies the generated `.slx` artifact.
+
+The sample also powers the Copilot canvas design showcase:
+
+```text
+Open the Simulink Model Diff canvas for samples/cardiac-digital-twin/drift.json
+```
+
 ## Simulink `.slx` format basics
 
 Official MathWorks guidance describes the `.slx` file as a ZIP-based Open Packaging Convention (OPC) package, not as a single XML document. The package typically contains a root `[Content_Types].xml` manifest plus model and metadata members such as `simulink/blockdiagram.xml`, `simulink/configSetInfo.xml`, `simulink/stateflow.xml`, and `metadata/mwcoreProperties.xml`.
