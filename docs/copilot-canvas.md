@@ -41,6 +41,16 @@ at a review workflow designed around trust, scope, evidence, and decision.
 
 ## PR review demo
 
+<p align="center">
+  <a href="assets/copilot-canvas-demo.mp4">
+    <img src="assets/copilot-canvas-demo.gif" alt="Short live demonstration of the Simulink Model Diff canvas review workflow" width="800">
+  </a>
+</p>
+
+The 14-second preview is captured from the running canvas with the checked-in
+cardiac digital twin report. Select the preview to open the
+[full-quality 1080p video](assets/copilot-canvas-demo.mp4).
+
 You can run the demo without creating a pull request or downloading a workflow
 artifact. Open this repository in the Copilot app and send:
 
