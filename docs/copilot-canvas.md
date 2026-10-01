@@ -43,29 +43,36 @@ at a review workflow designed around trust, scope, evidence, and decision.
 
 <p align="center">
   <a href="assets/copilot-canvas-demo.mp4">
-    <img src="assets/copilot-canvas-demo.gif" alt="Short live demonstration of the Simulink Model Diff canvas review workflow" width="800">
+    <img src="assets/copilot-canvas-demo.gif" alt="Educational demonstration of a pull request review using the Simulink Model Diff canvas" width="800">
   </a>
 </p>
 
-The 61-second preview starts in a blank project session in the Windows GitHub
-Copilot app. It uses a real pull-request artifact produced by the Action, then
-walks through the review from the request to the final decision. The prompt
-identifies PR #1, the Action artifact, the changed model, and the 60 mg to 65 mg
-parameter change. The canvas then shows the incomplete extraction status,
-changed model, before and after evidence, and the "Qualified extraction needed"
-assessment. The prompt, app response, canvas, mouse interaction, and scrolling
-are all recorded from the real app. No browser recreation, synthetic app frame,
-or generated model view is used.
+The 68-second preview starts in a blank project session in the Windows GitHub
+Copilot app. It uses a real pull-request artifact produced by the Action and
+follows the review through to the decision. Editorial captions explain each
+stage for someone seeing the product for the first time. The app session,
+prompt, agent response, canvas, mouse interaction, and scrolling are real
+footage. No browser recreation or generated model view is used.
 
 Select the preview to open the
 [full-quality recording](assets/copilot-canvas-demo.mp4).
 
+| Stage | What the video shows |
+| --- | --- |
+| Pull request | PR #1 changes `CardiacDigitalTwin/BetaBlockerDose` from 60 mg to 65 mg |
+| Action artifact | The workflow runs the Action, compares base and head, then uploads `model-drift-index.json` |
+| Copilot review | The reviewer attaches the PR and opens the downloaded artifact in the project canvas |
+| Trust | The extraction is partial, so the report cannot support a clean approval |
+| Evidence | The canvas shows the recorded value before and after the change |
+| Decision | Policy passed, but the reviewer should request a qualified extraction before approving |
+
 The recording uses the disposable demonstration pull request
 [samueltauil/simulink-model-diff#1](https://github.com/samueltauil/simulink-model-diff/pull/1).
-The Action ran, uploaded its reports, and passed the policy evaluation, but the
-analysis remained incomplete because the sample report is source-derived rather
-than produced by a qualified licensed Simulink extraction. The canvas does not
-hide that distinction.
+The workflow ran the Action, uploaded its reports, and passed the policy
+evaluation, but the analysis remained incomplete because the sample report is
+source-derived rather than produced by a qualified licensed Simulink extraction.
+The canvas does not hide that distinction. The demonstration PR was closed
+after the recording and remains available for inspection.
 
 To try the same flow with a local report, open this repository in the Copilot
 app and send:
