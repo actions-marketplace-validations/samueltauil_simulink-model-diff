@@ -1,5 +1,7 @@
 # Architecture
 
+[Documentation index](README.md) | [Project README](../README.md)
+
 ## Action and review flow
 
 ```mermaid
@@ -42,13 +44,20 @@ evidence. It cannot alter the check or approve the pull request. See
 
 ## Permission separation
 
-The analysis job needs only `contents: read`. The composite action cannot and should not own repository permissions. SARIF upload runs in a separate job with `security-events: write`, downloads the already generated artifact, and is disabled for fork PRs.
+The analysis job needs only `contents: read`. The composite Action does not own
+repository permissions. SARIF upload runs in a separate job with
+`security-events: write`, downloads the generated artifact, and is disabled for
+fork PRs.
 
-This separation preserves useful reports when code scanning is unavailable and prevents the model-analysis process from receiving write credentials.
+This separation preserves reports when code scanning is unavailable and keeps
+write credentials away from model analysis.
 
 ## Repository comparison
 
-The PR command accepts base and head refs plus one or more include globs. It resolves changed models from Git history, obtains the relevant base/head artifacts, and creates a per-model analysis plan. Callers do not prepare explicit pairs.
+The PR command accepts base and head refs plus one or more include globs. It
+resolves changed models from Git history, obtains the relevant base and head
+artifacts, and creates a per-model analysis plan. Callers do not prepare
+explicit pairs.
 
 The output directory contains:
 
@@ -70,7 +79,10 @@ analysis status and policy findings remain authoritative.
 
 ## Semantic boundary
 
-Canonical manifests remain the semantic contract. `.slx` or `.mdl` analysis requires an extractor that emits a valid canonical manifest with explicit analysis status and source digest. Supported Simulink APIs or documented comparison evidence are preferred; undocumented SLX XML is not a semantic API.
+Canonical manifests remain the semantic contract. `.slx` or `.mdl` analysis
+requires an extractor that emits a valid canonical manifest with explicit
+analysis status and a source digest. Supported Simulink APIs or documented
+comparison evidence are preferred. Undocumented SLX XML is not a semantic API.
 
 Only `complete` analysis supports a clean "no drift" conclusion. `partial`,
 `unsupported`, and `failed` states remain visible in aggregate and per-model

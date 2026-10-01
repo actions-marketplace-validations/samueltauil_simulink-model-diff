@@ -1,5 +1,7 @@
 # Copilot app review canvas
 
+[Documentation index](README.md) | [Project README](../README.md)
+
 The canvas is the human half of this project. The GitHub Action decides whether
 a pull request passes policy. The canvas is where an engineer decides whether
 the model change is correct.
@@ -118,17 +120,20 @@ Open the Simulink Model Diff canvas for build/model-drift/model-drift-index.json
 
 ## Install
 
-The extension is committed to this repository at
-`.github/extensions/simulink-model-diff-canvas/`, which is the Copilot app's
-project scope. Anyone who clones the repository and opens an agent session in it
-gets the canvas without installing anything. `@github/copilot-sdk` is resolved
-by the app, so there is no build step and no `node_modules` directory.
+The extension lives at
+`.github/extensions/simulink-model-diff-canvas/`. The GitHub Copilot app loads
+extensions from the active repository, so the canvas is available immediately
+when you open this project.
+
+To use the canvas in another repository, copy that extension directory into
+the same path in the target repository. The Action does not install the canvas
+because CI and the Copilot app are separate surfaces. The app resolves
+`@github/copilot-sdk`; there is no build step or `node_modules` directory.
 
 To confirm it is available, open **Customize** in the app sidebar, click
 **Canvas**, then **Installed**. The canvas appears as **Simulink Model Diff**.
 
-If you changed the extension source, reload extensions in the app before
-reopening the canvas.
+Reload extensions in the app after copying or changing the extension source.
 
 ## Open a report
 

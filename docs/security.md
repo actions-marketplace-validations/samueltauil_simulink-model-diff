@@ -1,6 +1,11 @@
 # Security
 
-Simulink models and pull-request code are untrusted input. The safe default is a GitHub-hosted `pull_request` workflow with read-only contents access, no secrets, no persisted checkout credential, and no licensed or privileged services.
+[Documentation index](README.md) | [Project README](../README.md)
+
+Simulink models and pull-request code are untrusted input. The safe default is
+a GitHub-hosted `pull_request` workflow with read-only contents access, no
+secrets, no persisted checkout credential, and no licensed or privileged
+services.
 
 ## Event model
 

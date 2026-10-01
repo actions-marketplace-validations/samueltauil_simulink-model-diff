@@ -1,6 +1,11 @@
 # Releasing
 
-Releases distribute the Python package, root composite action, and reusable PR workflow as one product contract. A MathWorks semantic extractor remains an optional, separately validated integration that must meet the same release quality and security requirements before it is treated as a supported product capability.
+[Documentation index](README.md) | [Project README](../README.md)
+
+Releases distribute the Python package, root composite Action, and reusable PR
+workflow as one product contract. A MathWorks semantic extractor remains an
+optional, separately validated integration. It must meet the same release and
+security requirements before it becomes a supported product capability.
 
 ## Supported release path
 

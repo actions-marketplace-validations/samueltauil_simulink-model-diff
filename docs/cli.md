@@ -1,5 +1,7 @@
 # Python CLI and configuration
 
+[Documentation index](README.md) | [Project README](../README.md)
+
 ## PR analysis
 
 The primary command for repository automation is:

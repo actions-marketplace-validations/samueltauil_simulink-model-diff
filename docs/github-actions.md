@@ -1,5 +1,7 @@
 # GitHub Actions integration
 
+[Documentation index](README.md) | [Project README](../README.md)
+
 The published release is the supported integration point. Consumers reference
 the repository at a release tag; they do not copy this repository into their
 own project and they do not use a local path.
@@ -163,8 +165,8 @@ See [the canvas guide](copilot-canvas.md) for the full review sequence.
 
 ## Checkout requirements
 
-PR analysis reads repository state at both commits. Callers using the published composite action directly must check out their own
-repository with:
+PR analysis reads repository state at both commits. Callers using the published
+composite action directly must check out their own repository with:
 
 ```yaml
 - uses: actions/checkout@v7
@@ -173,7 +175,9 @@ repository with:
     persist-credentials: false
 ```
 
-A shallow checkout is unsupported because the base commit or changed model blobs may be missing. If repository policy prevents a full fetch, fetch the exact base and head objects before invoking the action.
+A shallow checkout is unsupported because the base commit or changed model
+blobs may be missing. If repository policy prevents a full fetch, fetch the
+exact base and head objects before invoking the Action.
 
 ## Fork and permission model
 
@@ -196,7 +200,9 @@ The public pull-request samples run on `ubuntu-latest` and are not a licensed
 MATLAB execution boundary. Do not change them to a privileged self-hosted
 runner for automatic pull-request events.
 
-Use [`licensed-slx.yml`](../samples/github-actions/licensed-slx.yml) as the starting point for a manually dispatched, environment-approved analysis of trusted refs. See [Runner setup](runner-setup.md).
+Use [`licensed-slx.yml`](../samples/github-actions/licensed-slx.yml) as the
+starting point for a manually dispatched, environment-approved analysis of
+trusted refs. See [Runner setup](runner-setup.md).
 
 ## Release pinning
 

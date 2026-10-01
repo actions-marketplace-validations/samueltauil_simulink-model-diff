@@ -1,5 +1,7 @@
 # Getting started
 
+[Documentation index](README.md) | [Project README](../README.md)
+
 ## 1. Add the published Action
 
 Copy [`samples/github-actions/canonical-pr.yml`](../samples/github-actions/canonical-pr.yml) to `.github/workflows/simulink-model-drift.yml`. Adjust `include` and `rules` for the repository, then pin the workflow to the reviewed release or commit SHA.
@@ -38,8 +40,9 @@ drift are low priority. The Action exposes the aggregate state as
 
 ## 4. Review the change in the Copilot app
 
-Download the artifact from the workflow run into the repository checkout. The
-sample workflow names it `simulink-model-drift-<run-id>`.
+Download the artifact from the workflow run into a repository checkout that
+contains the canvas extension. The sample workflow names the artifact
+`simulink-model-drift-<run-id>`.
 
 ```bash
 gh run download <run-id> \
@@ -47,9 +50,10 @@ gh run download <run-id> \
   --dir build/model-drift
 ```
 
-The review canvas ships with this repository under `.github/extensions`, so a
-clone is the only installation step. Open a GitHub Copilot app session in the
-repository and ask for it:
+For this repository, the review canvas already exists under
+`.github/extensions`. In another repository, copy
+`.github/extensions/simulink-model-diff-canvas/` there first. Open a GitHub
+Copilot app session in the repository and ask:
 
 ```text
 Open the Simulink Model Diff canvas for build/model-drift/model-drift-index.json
@@ -61,14 +65,18 @@ finally a merge assessment. Treat that assessment as review guidance, not as a
 replacement for the Action check or branch protection.
 
 Reports generated locally open from the same default path without the download
-step. See [the canvas guide](copilot-canvas.md).
+step. See [the canvas guide](copilot-canvas.md) for installation details.
 
 The PR event supplies refs automatically. Pass `base-ref` and `head-ref` for
 `workflow_dispatch`, scheduled runs, or another event without PR SHAs.
 
 ## Licensed `.slx` analysis
 
-Do not send fork PR content to a licensed self-hosted runner. Use a separate manual or environment-approved workflow for trusted refs, such as [`samples/github-actions/licensed-slx.yml`](../samples/github-actions/licensed-slx.yml). Qualify the extractor against the required MATLAB/Simulink releases and model dependencies before treating results as complete.
+Do not send fork PR content to a licensed self-hosted runner. Use a separate
+manual or environment-approved workflow for trusted refs, such as
+[`samples/github-actions/licensed-slx.yml`](../samples/github-actions/licensed-slx.yml).
+Qualify the extractor against the required MATLAB and Simulink releases and
+model dependencies before treating results as complete.
 
 ## Lower-level CLI
 

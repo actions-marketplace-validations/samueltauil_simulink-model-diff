@@ -1,5 +1,7 @@
 # Compared with the MathWorks pull-request example
 
+[Documentation index](README.md) | [Project README](../README.md)
+
 The projects solve related problems at different layers.
 
 The
@@ -35,7 +37,7 @@ The comparison above is based on revision
 [`6b00057`](https://github.com/mathworks/Simulink-Model-Comparison-for-GitHub-Pull-Requests/tree/6b0005788f105ad4f0ec138336e3b4d2d89ded0a)
 of the MathWorks repository.
 
-## The new review plan
+## Review planning
 
 An HTML diff answers, "What changed in this model?" A large pull request first
 needs to answer, "What should I review first, and what prevents approval?"

@@ -1,5 +1,7 @@
 # Runner setup
 
+[Documentation index](README.md) | [Project README](../README.md)
+
 ## Automatic pull-request analysis
 
 Run the reusable PR workflow on `ubuntu-latest`. It needs Python and full Git history, but no MATLAB license when changed inputs are canonical manifests.
