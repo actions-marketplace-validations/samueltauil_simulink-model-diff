@@ -49,12 +49,12 @@ at a review workflow designed around trust, scope, evidence, and decision.
   </a>
 </p>
 
-The 68-second preview starts in a blank project session in the Windows GitHub
-Copilot app. It uses a real pull-request artifact produced by the Action and
-follows the review through to the decision. Editorial captions explain each
-stage for someone seeing the product for the first time. The app session,
-prompt, agent response, canvas, mouse interaction, and scrolling are real
-footage. No browser recreation or generated model view is used.
+The 61-second preview is an unedited screen recording. It starts in a blank
+project session in the Windows GitHub Copilot app, uses a real pull-request
+artifact produced by the Action, and follows the review through to the
+decision. The app session, prompt, agent response, canvas, mouse interaction,
+and scrolling are real footage. No browser recreation or generated model view
+is used. The table below walks through what happens at each stage.
 
 Select the preview to open the
 [full-quality recording](assets/copilot-canvas-demo.mp4).
