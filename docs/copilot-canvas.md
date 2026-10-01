@@ -47,9 +47,14 @@ at a review workflow designed around trust, scope, evidence, and decision.
   </a>
 </p>
 
-The 14-second preview is captured from the running canvas with the checked-in
-cardiac digital twin report. Select the preview to open the
-[full-quality 1080p video](assets/copilot-canvas-demo.mp4).
+The 12-second preview is a direct recording of the running canvas extension
+with the checked-in cardiac digital twin report. It contains no mockup frame,
+synthetic overlay, or generated model view. Select the preview to open the
+[full-quality recording](assets/copilot-canvas-demo.mp4).
+
+The recording focuses on the canvas surface itself. The surrounding Copilot app
+chrome is not included, because the extension host does not expose a screen
+capture API to the repository.
 
 You can run the demo without creating a pull request or downloading a workflow
 artifact. Open this repository in the Copilot app and send:
