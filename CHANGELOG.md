@@ -4,6 +4,15 @@ All notable user-visible changes are documented here. The project follows Semant
 
 ## Unreleased
 
+## 0.4.1 - 2026-10-01
+
+### Changed
+
+- Published the public Action release after opening the repository to GitHub
+  Marketplace consumers.
+- Updated the Action, reusable workflow, package metadata, and documentation
+  references to the `v0.4.1` contract.
+
 ## 0.4.0 - 2026-09-30
 
 ### Added
