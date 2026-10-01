@@ -3,7 +3,7 @@
 Detect Simulink model drift in pull requests and review it before merge.
 
 [![CI](https://github.com/samueltauil/simulink-model-diff/actions/workflows/simulink-model-drift.yml/badge.svg)](https://github.com/samueltauil/simulink-model-diff/actions/workflows/simulink-model-drift.yml)
-[![Release](https://img.shields.io/badge/release-v0.3.1-2ea44f)](https://github.com/samueltauil/simulink-model-diff/releases/tag/v0.3.1)
+[![Release](https://img.shields.io/badge/release-v0.4.0-2ea44f)](https://github.com/samueltauil/simulink-model-diff/releases/tag/v0.4.0)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 
@@ -20,6 +20,22 @@ format.
 The Action produces the evidence. The canvas reads the same JSON for human
 review. Neither one approves a pull request; branch protection and the policy
 result stay authoritative.
+
+## How this differs from the MathWorks example
+
+The
+[MathWorks pull-request example](https://github.com/mathworks/Simulink-Model-Comparison-for-GitHub-Pull-Requests)
+uses the licensed Simulink Comparison Tool to publish official visual HTML
+reports. That is the better fit when the main requirement is direct `visdiff`
+output and MATLAB licensing is available in CI.
+
+This project operates one level above the visual comparator. It adds exact
+base/head discovery, structured evidence, policy and SARIF, explicit trust
+states, a prioritized review plan, and a Copilot app review surface. A qualified
+MathWorks-backed extractor can plug into the same contract, so official
+comparison evidence and GitHub-native review controls do not have to be
+competing choices. See
+[the detailed comparison](docs/comparison-with-mathworks.md).
 
 ## Quick start
 
@@ -48,7 +64,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: samueltauil/simulink-model-diff@v0.3.1
+      - uses: samueltauil/simulink-model-diff@v0.4.0
         with:
           fail-on: error
 
@@ -59,7 +75,7 @@ jobs:
           path: build/model-drift
 ```
 
-The `uses: samueltauil/simulink-model-diff@v0.3.1` step is the published
+The `uses: samueltauil/simulink-model-diff@v0.4.0` step is the published
 Action, downloaded by GitHub from the release tag. The checkout step fetches
 the consumer repository's model history; it does not pull this repository.
 
@@ -80,11 +96,13 @@ SHA when your supply-chain policy requires an immutable reference.
 | `extractor-command` | none | Command emitting one canonical manifest per artifact, with `{artifact}` as the path placeholder |
 | `python-version` | `3.12` | Python version installed by `actions/setup-python` |
 
-Outputs are `output`, `index-json`, `summary-markdown`, `sarif`, and
-`exit-code`. `base-ref` and `head-ref` default to the pull request base and head
-SHAs; outside a PR event, pass both explicitly. The Action requests no
-permissions and uploads nothing by itself, so artifact and SARIF steps stay
-under caller control.
+Outputs are `output`, `index-json`, `summary-markdown`, `sarif`,
+`review-status`, and `exit-code`. `review-status` is `blocked`,
+`review-required`, or `clear`, so later workflow steps can route the result
+without reparsing Markdown. `base-ref` and `head-ref` default to the pull request
+base and head SHAs; outside a PR event, pass both explicitly. The Action
+requests no permissions and uploads nothing by itself, so artifact and SARIF
+steps stay under caller control.
 
 ## Report files
 
@@ -95,7 +113,7 @@ extractor, compares canonical model manifests, and applies repository rules.
 | File | Purpose |
 | --- | --- |
 | `model-drift-index.json` | Aggregate status and links to every changed model |
-| `model-drift-summary.md` | Pull-request summary written to the Actions job |
+| `model-drift-summary.md` | Prioritized review plan and drift details written to the Actions job |
 | `model-drift.sarif` | Optional code-scanning findings |
 | `models/*/model-drift.json` | Element-level drift for one model |
 | `models/*/model-drift.md` | Human-readable report for one model |
@@ -159,7 +177,7 @@ Do not route untrusted fork models to a self-hosted MATLAB runner. See
 ## Reusable workflow wrapper
 
 The optional reusable workflow at
-`samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.3.1`
+`samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.4.0`
 adds artifact retention and a separate fork-safe SARIF job around the same
 Action. This is a workflow call at the job level, not the Action installation
 syntax. See [GitHub Actions integration](docs/github-actions.md) for the
@@ -223,6 +241,7 @@ manifest.
 | [GitHub Actions integration](docs/github-actions.md) | Action inputs, outputs, and the reusable workflow |
 | [Copilot app canvas](docs/copilot-canvas.md) | Install, open, and drive the review canvas |
 | [Architecture](docs/architecture.md) | Pipeline stages and report contracts |
+| [Compared with MathWorks](docs/comparison-with-mathworks.md) | Product boundaries, trade-offs, and complementary use |
 | [Security](docs/security.md) | Threat model, fork PRs, extractor trust |
 | [Runner setup](docs/runner-setup.md) | Licensed MATLAB runner guidance |
 
@@ -234,7 +253,7 @@ usage.
 ## Project status
 
 The comparison engine, reporters, Action, reusable workflow, and canvas are
-implemented. The PR-native Action contract is published as `v0.3.1`. Consumers
+implemented. The PR-native Action contract is published as `v0.4.0`. Consumers
 should pin that release or a reviewed full commit SHA. See
 [CHANGELOG.md](CHANGELOG.md) and [ROADMAP.md](ROADMAP.md).
 

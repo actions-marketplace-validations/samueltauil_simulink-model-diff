@@ -4,11 +4,23 @@ All notable user-visible changes are documented here. The project follows Semant
 
 ## Unreleased
 
+## 0.4.0 - 2026-09-30
+
+### Added
+
+- Deterministic aggregate review plans that rank each changed model as blocked,
+  high, normal, or low priority and provide a reason and next action.
+- `review-status` outputs on the published Action and reusable workflow.
+- A grounded comparison with the MathWorks pull-request model comparison
+  example, including complementary adoption guidance.
+
 ### Changed
 
-- Made the published root Action (`samueltauil/simulink-model-diff@v0.3.1`)
+- Made the published root Action (`samueltauil/simulink-model-diff@v0.4.0`)
   the primary installation example. The reusable workflow remains available as
   an optional wrapper for artifact retention and fork-safe SARIF upload.
+- Ordered the GitHub Actions summary and Copilot canvas model queue by reviewer
+  priority so incomplete evidence and policy failures appear first.
 
 ## 0.3.1 - 2026-09-29
 

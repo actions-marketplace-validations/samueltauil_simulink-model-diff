@@ -32,3 +32,22 @@ def test_canonical_consumer_invokes_published_action_from_steps() -> None:
     )
     assert action["uses"] == f"samueltauil/simulink-model-diff@v{version}"
     assert "/.github/workflows/" not in action["uses"]
+
+
+def test_action_and_reusable_workflow_expose_review_status() -> None:
+    action = yaml.safe_load((ROOT / "action.yml").read_text(encoding="utf-8"))
+    assert action["outputs"]["review-status"]["value"] == (
+        "${{ steps.pr.outputs['review-status'] }}"
+    )
+
+    workflow = yaml.safe_load(
+        (ROOT / ".github" / "workflows" / "pr-analysis.yml").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert workflow[True]["workflow_call"]["outputs"]["review-status"]["value"] == (
+        "${{ jobs.analyze.outputs['review-status'] }}"
+    )
+    assert workflow["jobs"]["analyze"]["outputs"]["review-status"] == (
+        "${{ steps.drift.outputs['review-status'] }}"
+    )

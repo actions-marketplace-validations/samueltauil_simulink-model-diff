@@ -6,9 +6,9 @@ own project and they do not use a local path.
 
 There are two hosted surfaces:
 
-- the published Action at `samueltauil/simulink-model-diff@v0.3.1`;
+- the published Action at `samueltauil/simulink-model-diff@v0.4.0`;
 - an optional reusable workflow at
-  `samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.3.1`.
+  `samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.4.0`.
 
 The Action is the primary integration. GitHub downloads it from the tagged
 release when it appears in a job's `steps`. The reusable workflow is a wrapper
@@ -18,10 +18,10 @@ These forms are not interchangeable:
 
 ```yaml
 # Published Action: use inside steps.
-- uses: samueltauil/simulink-model-diff@v0.3.1
+- uses: samueltauil/simulink-model-diff@v0.4.0
 
 # Reusable workflow: use at the job level.
-uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.3.1
+uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.4.0
 ```
 
 ## Recommended consumer workflow
@@ -52,7 +52,7 @@ jobs:
 
       - name: Analyze model drift
         id: drift
-        uses: samueltauil/simulink-model-diff@v0.3.1
+        uses: samueltauil/simulink-model-diff@v0.4.0
         with:
           include: |
             models/**/*.slx
@@ -70,7 +70,7 @@ jobs:
 ```
 
 This checks out the consumer repository, then GitHub downloads the Action from
-the `v0.3.1` tag. Consumers do not clone or vendor this project.
+the `v0.4.0` tag. Consumers do not clone or vendor this project.
 
 ## Action inputs and outputs
 
@@ -85,10 +85,11 @@ the `v0.3.1` tag. Consumers do not clone or vendor this project.
 | `extractor-command` | empty | Optional non-privileged canonical extractor command |
 | `python-version` | `3.12` | Python runtime |
 
-The Action outputs `output`, `index-json`, `summary-markdown`, `sarif`, and
-`exit-code`. A custom `rules` path must exist in the consumer repository.
-Artifact retention and SARIF upload are workflow responsibilities, not Action
-inputs.
+The Action outputs `output`, `index-json`, `summary-markdown`, `sarif`,
+`review-status`, and `exit-code`. `review-status` is `blocked`,
+`review-required`, or `clear`. A custom `rules` path must exist in the consumer
+repository. Artifact retention and SARIF upload are workflow responsibilities,
+not Action inputs.
 
 ## Optional reusable workflow
 
@@ -102,7 +103,7 @@ permissions:
 
 jobs:
   model-drift:
-    uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.3.1
+    uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.4.0
     with:
       include: |
         models/**/*.slx
@@ -126,11 +127,13 @@ The published Action's deterministic outputs are:
 | `index-json` | `<output>/model-drift-index.json` |
 | `summary-markdown` | `<output>/model-drift-summary.md` |
 | `sarif` | `<output>/model-drift.sarif` |
+| `review-status` | `blocked`, `review-required`, or `clear` |
 | `exit-code` | Stable analyzer exit code |
 
-The Action writes the aggregate Markdown to `GITHUB_STEP_SUMMARY`. It does not
-upload artifacts, upload SARIF, comment on the pull request, or request
-permissions.
+The Action writes the aggregate Markdown to `GITHUB_STEP_SUMMARY`. The summary
+and aggregate JSON use the same reviewer priority order as the Copilot canvas.
+The Action does not upload artifacts, upload SARIF, comment on the pull request,
+or request permissions.
 
 ## Hand the artifact to the review canvas
 
@@ -197,11 +200,11 @@ Use [`licensed-slx.yml`](../samples/github-actions/licensed-slx.yml) as the star
 
 ## Release pinning
 
-Pin `v0.3.1` for the supported Action contract, or pin the full release commit
+Pin `v0.4.0` for the supported Action contract, or pin the full release commit
 SHA for an immutable supply-chain reference. The optional reusable workflow
 self-references the Action from the same release; do not mix a newer workflow
 contract with an older Action.
 
-The `v0.3.1` tag is also the release boundary for the Python package,
+The `v0.4.0` tag is also the release boundary for the Python package,
 report schemas, action metadata, and workflow contract. Upgrade those surfaces
 together.

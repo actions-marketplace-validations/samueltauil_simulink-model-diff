@@ -14,7 +14,8 @@ flowchart LR
     P --> X[Changed model discovery]
     X --> M[Canonical model manifests]
     M --> D[Drift and policy evaluation]
-    D --> R[Aggregate and per-model reports]
+    D --> K[Deterministic review plan]
+    K --> R[Aggregate and per-model reports]
     D --> G[Action check result]
     R --> S[Job summary]
     R --> T[Artifact upload]
@@ -60,6 +61,12 @@ The output directory contains:
 
 The JSON files form the handoff between automated analysis and local review.
 The canvas does not need the original `.slx` file to render an existing report.
+
+The aggregate index also contains a `reviewPlan`. It ranks failed or incomplete
+analysis and policy failures ahead of interface, functional, and structural
+drift. The same order appears in the job summary and the canvas model queue.
+This is reviewer prioritization, not another policy gate; the underlying
+analysis status and policy findings remain authoritative.
 
 ## Semantic boundary
 

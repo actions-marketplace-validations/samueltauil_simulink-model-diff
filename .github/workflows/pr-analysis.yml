@@ -69,6 +69,9 @@ on:
       sarif:
         description: Path to model-drift.sarif.
         value: ${{ jobs.analyze.outputs.sarif }}
+      review-status:
+        description: Aggregate reviewer state (blocked, review-required, or clear).
+        value: ${{ jobs.analyze.outputs['review-status'] }}
       exit-code:
         description: Analyzer exit code.
         value: ${{ jobs.analyze.outputs['exit-code'] }}
@@ -85,6 +88,7 @@ jobs:
       index-json: ${{ steps.drift.outputs['index-json'] }}
       summary-markdown: ${{ steps.drift.outputs['summary-markdown'] }}
       sarif: ${{ steps.drift.outputs.sarif }}
+      review-status: ${{ steps.drift.outputs['review-status'] }}
       exit-code: ${{ steps.drift.outputs['exit-code'] }}
     steps:
       - name: Check out pull request history
@@ -95,7 +99,7 @@ jobs:
 
       - name: Analyze Simulink model drift
         id: drift
-        uses: samueltauil/simulink-model-diff@v0.3.1
+        uses: samueltauil/simulink-model-diff@v0.4.0
         with:
           base-ref: ${{ inputs['base-ref'] }}
           head-ref: ${{ inputs['head-ref'] }}

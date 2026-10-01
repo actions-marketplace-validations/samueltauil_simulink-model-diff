@@ -58,6 +58,9 @@ outputs:
   sarif:
     description: Path to model-drift.sarif.
     value: ${{ steps.pr.outputs.sarif }}
+  review-status:
+    description: Aggregate reviewer state (blocked, review-required, or clear).
+    value: ${{ steps.pr.outputs['review-status'] }}
   exit-code:
     description: Analyzer exit code; see docs/cli.md.
     value: ${{ steps.pr.outputs['exit-code'] }}
@@ -142,12 +145,21 @@ runs:
         index_json="$INPUT_OUTPUT/model-drift-index.json"
         summary_markdown="$INPUT_OUTPUT/model-drift-summary.md"
         sarif="$INPUT_OUTPUT/model-drift.sarif"
+        review_status=""
+        if [[ -f "$index_json" ]]; then
+          review_status="$(
+            python -c \
+              'import json, sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("reviewPlan", {}).get("status", ""))' \
+              "$index_json"
+          )"
+        fi
 
         {
           echo "output=$INPUT_OUTPUT"
           [[ -f "$index_json" ]] && echo "index-json=$index_json" || echo "index-json="
           [[ -f "$summary_markdown" ]] && echo "summary-markdown=$summary_markdown" || echo "summary-markdown="
           [[ -f "$sarif" ]] && echo "sarif=$sarif" || echo "sarif="
+          echo "review-status=$review_status"
           echo "exit-code=$status"
         } >> "$GITHUB_OUTPUT"
 

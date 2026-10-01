@@ -19,6 +19,7 @@ from model_drift.canonicalize import canonicalize_manifest
 from model_drift.compare import compare_manifests
 from model_drift.extract import ExternalCommandExtractor
 from model_drift.reporters import build_sarif, render_markdown, render_sarif, render_svg
+from model_drift.review import build_model_review, build_review_plan
 from model_drift.rules import Finding, Rule, evaluate_rules, load_rules
 from model_drift.serialization import canonical_json_text, normalize_repository_path, to_json_value
 
@@ -205,6 +206,17 @@ def _analyze_model(
     policy_failed = _policy_failed(findings, options.fail_on)
     exit_code = 3 if policy_failed else 4 if analysis_status != "complete" else 0
     relative_output = model_output.relative_to(output).as_posix()
+    changes = drift_document.get("changes", ())
+    classifications = Counter(
+        str(change.get("functionalClassification", "unknown"))
+        for change in changes
+        if isinstance(change, Mapping)
+    )
+    categories = Counter(
+        str(change.get("category", "unknown"))
+        for change in changes
+        if isinstance(change, Mapping)
+    )
     record = {
         "id": model_id,
         "changeType": model.change_type,
@@ -214,6 +226,10 @@ def _analyze_model(
         "analysisStatus": analysis_status,
         "policyStatus": "failed" if policy_failed else "passed",
         "summary": drift_document["summary"],
+        "changeProfile": {
+            "classifications": dict(sorted(classifications.items())),
+            "categories": dict(sorted(categories.items())),
+        },
         "findingCounts": dict(sorted(Counter(item.level for item in findings).items())),
         "outputDirectory": relative_output,
         "artifacts": {
@@ -539,8 +555,14 @@ def _build_index(
     findings: Sequence[Finding],
     failures: Sequence[Mapping[str, str]],
 ) -> dict[str, Any]:
+    prepared_records = []
+    for source in records:
+        record = dict(source)
+        record["review"] = build_model_review(record)
+        prepared_records.append(record)
+
     drift_totals = Counter()
-    for record in records:
+    for record in prepared_records:
         summary = record.get("summary")
         if isinstance(summary, Mapping):
             drift_totals.update({key: int(value) for key, value in summary.items()})
@@ -548,9 +570,10 @@ def _build_index(
         "failed"
         if failures
         else "incomplete"
-        if any(record.get("status") == "incomplete" for record in records)
+        if any(record.get("status") == "incomplete" for record in prepared_records)
         else "complete"
     )
+    review_plan = build_review_plan(prepared_records)
     return {
         "$schema": "https://github.com/github/simulink-model-drift/model-drift-index/0.1.0",
         "schemaVersion": "0.1.0",
@@ -561,17 +584,24 @@ def _build_index(
         "includes": list(options.includes),
         "status": aggregate_status,
         "summary": {
-            "changedModels": len(records),
-            "successfulModels": sum(record.get("status") == "complete" for record in records),
-            "incompleteModels": sum(record.get("status") == "incomplete" for record in records),
-            "failedModels": sum(record.get("status") == "failed" for record in records),
+            "changedModels": len(prepared_records),
+            "successfulModels": sum(
+                record.get("status") == "complete" for record in prepared_records
+            ),
+            "incompleteModels": sum(
+                record.get("status") == "incomplete" for record in prepared_records
+            ),
+            "failedModels": sum(
+                record.get("status") == "failed" for record in prepared_records
+            ),
             "policyFailedModels": sum(
-                record.get("policyStatus") == "failed" for record in records
+                record.get("policyStatus") == "failed" for record in prepared_records
             ),
             "findings": dict(sorted(Counter(item.level for item in findings).items())),
             "drift": dict(sorted(drift_totals.items())),
         },
-        "models": list(records),
+        "reviewPlan": review_plan,
+        "models": prepared_records,
         "failures": list(sorted(failures, key=lambda item: item["path"])),
     }
 
@@ -584,7 +614,9 @@ def _aggregate_markdown(index: Mapping[str, Any]) -> str:
         "",
         f"**Range:** `{index['baseRef']}...{index['headRef']}`  ",
         f"**Analysis:** {str(index['status']).title()}  ",
-        f"**Changed models:** {summary['changedModels']}",
+        f"**Review status:** {str(index['reviewPlan']['status']).replace('-', ' ').title()}  ",
+        f"**Changed models:** {summary['changedModels']}  ",
+        f"**Next step:** {index['reviewPlan']['recommendedAction']}",
         "",
     ]
     if not models:
@@ -597,18 +629,49 @@ def _aggregate_markdown(index: Mapping[str, Any]) -> str:
         return "\n".join(lines)
     lines.extend(
         [
-            "| Model | Git change | Analysis | Policy | Added | Removed | Modified |",
-            "| --- | --- | --- | --- | ---: | ---: | ---: |",
+            "### Prioritized review plan",
+            "",
+            "| Priority | Model | Analysis | Policy | Why | Next step |",
+            "| --- | --- | --- | --- | --- | --- |",
         ]
     )
-    for model in models:
+    order = {
+        model_id: position
+        for position, model_id in enumerate(index["reviewPlan"]["orderedModelIds"])
+    }
+    prioritized = sorted(
+        models,
+        key=lambda model: (
+            order.get(model.get("id"), len(order)),
+            str(model.get("headPath") or model.get("basePath")),
+        ),
+    )
+    for model in prioritized:
+        review = model.get("review", {})
+        lines.append(
+            f"| {str(review.get('priority', 'normal')).title()} "
+            f"| `{model.get('headPath') or model.get('basePath')}` "
+            f"| {model['status']} "
+            f"| {model.get('policyStatus', 'not-evaluated')} "
+            f"| {review.get('summary', 'Review required')} "
+            f"| {review.get('action', 'Inspect the model report.')} |"
+        )
+    lines.extend(
+        [
+            "",
+            "### Drift details",
+            "",
+            "| Model | Git change | Added | Removed | Modified | Interfaces |",
+            "| --- | --- | ---: | ---: | ---: | ---: |",
+        ]
+    )
+    for model in prioritized:
         drift = model.get("summary", {})
         lines.append(
             f"| `{model.get('headPath') or model.get('basePath')}` "
-            f"| {model['changeType']} | {model['status']} "
-            f"| {model.get('policyStatus', 'not-evaluated')} "
+            f"| {model['changeType']} "
             f"| {drift.get('added', 0)} | {drift.get('removed', 0)} "
-            f"| {drift.get('modified', 0)} |"
+            f"| {drift.get('modified', 0)} | {drift.get('interfaceChanges', 0)} |"
         )
     lines.append("")
     failures = index.get("failures", ())

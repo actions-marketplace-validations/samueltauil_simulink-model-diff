@@ -5,7 +5,7 @@
 Copy [`samples/github-actions/canonical-pr.yml`](../samples/github-actions/canonical-pr.yml) to `.github/workflows/simulink-model-drift.yml`. Adjust `include` and `rules` for the repository, then pin the workflow to the reviewed release or commit SHA.
 
 The workflow checks out the consumer repository and runs
-`samueltauil/simulink-model-diff@v0.3.1` from the published release. It
+`samueltauil/simulink-model-diff@v0.4.0` from the published release. It
 discovers changed models between the event's base and head SHAs, writes an
 aggregate job summary, and retains the complete report directory.
 
@@ -21,7 +21,7 @@ findings; `none` reports without enforcing.
 | File | Purpose |
 | --- | --- |
 | `model-drift-index.json` | Aggregate status and per-model report index |
-| `model-drift-summary.md` | Reviewer summary written to the job summary |
+| `model-drift-summary.md` | Prioritized reviewer plan written to the job summary |
 | `model-drift.sarif` | Aggregate policy findings |
 | per-model report directories | Detailed evidence for each changed model |
 
@@ -29,6 +29,12 @@ Artifacts are uploaded even when policy fails. SARIF is optional and is skipped 
 
 The policy result answers whether the pull request meets the configured rules.
 It does not replace engineering review of the model change.
+
+The job summary orders models by reviewer urgency. Failed or partial analysis
+and policy failures are blocked, interface or functional drift is high
+priority, other semantic drift is normal, and models without recorded semantic
+drift are low priority. The Action exposes the aggregate state as
+`review-status`.
 
 ## 4. Review the change in the Copilot app
 

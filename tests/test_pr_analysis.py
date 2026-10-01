@@ -180,6 +180,8 @@ def test_pr_no_changed_models_is_successful_and_useful(tmp_path: Path) -> None:
     index = _index(output)
     assert index["status"] == "complete"
     assert index["summary"]["changedModels"] == 0  # type: ignore[index]
+    assert index["reviewPlan"]["status"] == "clear"  # type: ignore[index]
+    assert index["reviewPlan"]["orderedModelIds"] == []  # type: ignore[index]
     assert index["models"] == []
     assert not (output / "models").exists()
     assert "No changed Simulink model files" in (
@@ -209,6 +211,12 @@ def test_pr_modified_model_emits_deterministic_per_model_reports(
     assert model["headPath"] == "models/controller.slx"
     assert model["analysisStatus"] == "complete"
     assert model["summary"]["added"] == 1
+    assert model["review"]["priority"] == "high"
+    assert index["reviewPlan"]["status"] == "review-required"  # type: ignore[index]
+    assert index["reviewPlan"]["orderedModelIds"] == [model["id"]]  # type: ignore[index]
+    summary = (output / "model-drift-summary.md").read_text(encoding="utf-8")
+    assert "### Prioritized review plan" in summary
+    assert "Behavior or interface review required" in summary
 
 
 def test_pr_added_model_uses_empty_base_and_reports_all_semantic_elements(
@@ -316,6 +324,8 @@ def test_pr_policy_failure_has_stable_exit_and_aggregate_sarif(tmp_path: Path) -
     assert result == ExitCode.POLICY_FAILURE
     index = _index(output)
     assert index["summary"]["policyFailedModels"] == 1  # type: ignore[index]
+    assert index["reviewPlan"]["status"] == "blocked"  # type: ignore[index]
+    assert index["models"][0]["review"]["priority"] == "blocked"  # type: ignore[index]
     sarif = json.loads((output / "model-drift.sarif").read_text(encoding="utf-8"))
     assert any(
         result["ruleId"] == "SIMULINK-IFACE-001"
@@ -342,6 +352,8 @@ def test_pr_extraction_failure_is_fail_closed_but_still_emits_index(
     index = _index(output)
     assert index["status"] == "failed"
     assert index["summary"]["failedModels"] == 1  # type: ignore[index]
+    assert index["reviewPlan"]["status"] == "blocked"  # type: ignore[index]
+    assert index["models"][0]["review"]["summary"] == "Analysis unavailable"  # type: ignore[index]
     assert index["failures"][0]["code"] == "PR_EXTRACTION_FAILED"  # type: ignore[index]
     sarif = json.loads((output / "model-drift.sarif").read_text(encoding="utf-8"))
     assert sarif["runs"][0]["invocations"][0]["executionSuccessful"] is False
@@ -369,6 +381,10 @@ def test_pr_incomplete_analysis_is_fail_closed_with_reports(tmp_path: Path) -> N
     assert index["status"] == "incomplete"
     assert index["summary"]["incompleteModels"] == 1  # type: ignore[index]
     assert index["models"][0]["analysisStatus"] == "partial"  # type: ignore[index]
+    assert index["reviewPlan"]["status"] == "blocked"  # type: ignore[index]
+    assert index["models"][0]["review"]["summary"] == (  # type: ignore[index]
+        "Qualified extraction required"
+    )
 
 
 def test_pr_exit_priority_keeps_extraction_failure_above_policy_failure(

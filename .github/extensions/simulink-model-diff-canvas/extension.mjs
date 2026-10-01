@@ -108,6 +108,10 @@ function driftModel(id, label, drift, record = {}) {
         record.analysisStatus || drift?.comparison?.status || "unknown",
     );
     const policyStatus = String(record.policyStatus || "unknown");
+    const assessed = assessReview(analysisStatus, policyStatus, changes.length);
+    const planned = record.review && typeof record.review === "object"
+        ? record.review
+        : {};
     return {
         id,
         label,
@@ -119,7 +123,13 @@ function driftModel(id, label, drift, record = {}) {
         summary: record.summary || drift?.summary || {},
         findingCounts: record.findingCounts || {},
         changes,
-        review: assessReview(analysisStatus, policyStatus, changes.length),
+        review: {
+            ...assessed,
+            priority: planned.priority ? String(planned.priority) : null,
+            rank: Number.isInteger(planned.rank) ? planned.rank : 99,
+            reasons: Array.isArray(planned.reasons) ? planned.reasons.map(String) : [],
+            detail: String(planned.action || assessed.detail),
+        },
         topology: {
             blocks: Array.isArray(topology.blocks)
                 ? topology.blocks.map((block) => ({
@@ -140,7 +150,23 @@ async function loadReport(workingDirectory, reportPath) {
     const document = await readJson(candidate);
     if (Array.isArray(document.models)) {
         const models = [];
-        for (const record of document.models) {
+        const order = new Map(
+            Array.isArray(document.reviewPlan?.orderedModelIds)
+                ? document.reviewPlan.orderedModelIds.map((id, index) => [String(id), index])
+                : [],
+        );
+        const records = [...document.models].sort((left, right) => {
+            const leftOrder = order.get(String(left.id));
+            const rightOrder = order.get(String(right.id));
+            if (leftOrder != null || rightOrder != null) {
+                return (leftOrder ?? Number.MAX_SAFE_INTEGER) -
+                    (rightOrder ?? Number.MAX_SAFE_INTEGER);
+            }
+            return String(left.headPath || left.basePath || left.id).localeCompare(
+                String(right.headPath || right.basePath || right.id),
+            );
+        });
+        for (const record of records) {
             let drift = { changes: [], comparison: {}, summary: record.summary || {} };
             const artifact = record?.artifacts?.json;
             if (typeof artifact === "string") {
@@ -160,6 +186,7 @@ async function loadReport(workingDirectory, reportPath) {
             baseRef: document.baseRef || document.baseCommit || null,
             headRef: document.headRef || document.headCommit || null,
             summary: document.summary || {},
+            reviewPlan: document.reviewPlan || null,
             models,
         };
     }
@@ -329,7 +356,7 @@ function render(){
  status.textContent=state.error?"error":known(state.report?.status)?state.report.status:"loaded";
  if(state.error){models.innerHTML="";content.innerHTML='<div class="error"><strong>Report unavailable</strong><br>'+esc(state.error)+'</div>';return}
  const list=state.report?.models||[]; document.getElementById("model-count").textContent=String(list.length).padStart(2,"0"); if(!selected||!list.some(m=>m.id===selected))selected=state.selectedModelId||list[0]?.id;
- models.innerHTML=list.map((m,i)=>{const facts=[m.changeType,known(m.analysisStatus)?m.analysisStatus:null].filter(Boolean);return '<button class="model '+(m.id===selected?"active":"")+'" data-id="'+esc(m.id)+'" data-number="'+String(i+1).padStart(2,"0")+'"><span>'+esc(m.label)+(facts.length?'<small>'+facts.map(esc).join(" / ")+'</small>':'')+'</span></button>'}).join("");
+ models.innerHTML=list.map((m,i)=>{const facts=[known(m.review?.priority)?m.review.priority:null,m.changeType,known(m.analysisStatus)?m.analysisStatus:null].filter(Boolean);return '<button class="model '+(m.id===selected?"active":"")+'" data-id="'+esc(m.id)+'" data-number="'+String(i+1).padStart(2,"0")+'"><span>'+esc(m.label)+(facts.length?'<small>'+facts.map(esc).join(" / ")+'</small>':'')+'</span></button>'}).join("");
  models.querySelectorAll("button").forEach(b=>b.onclick=()=>choose(b.dataset.id));
  const m=list.find(x=>x.id===selected); if(!m){content.innerHTML='<div class="empty">No changed models were found.</div>';return}
  const s=m.summary||{}, changes=m.changes||[], topology=m.topology||{};
@@ -352,7 +379,7 @@ function render(){
  const phases='<div class="phasebar"><div class="phase '+phaseTrust+'"><b>01 / Trust</b>'+esc(known(m.analysisStatus)?m.analysisStatus:"not reported")+'</div><div class="phase"><b>02 / Scope</b>'+affected+' affected path'+(affected===1?"":"s")+'</div><div class="phase"><b>03 / Evidence</b>'+changes.length+' revision'+(changes.length===1?"":"s")+'</div><div class="phase '+decision.tone+'"><b>04 / Decision</b>'+esc(decision.title)+'</div></div>';
  const filterbar=changes.length?'<div class="filterbar">'+filters.map(f=>'<button class="filter '+(changeFilter===f[0]&&!pathFilter?"active":"")+'" data-filter="'+f[0]+'">'+f[1]+'</button>').join("")+(pathFilter?'<button class="filter active clear-focus" data-clear-focus>Focused path ×</button>':'')+'</div>':'';
  const ledger=visible.length?'<div class="ledger">'+visible.map((c,i)=>{const facts=[c.category,c.elementType,c.property,known(c.classification)?c.classification:null].filter(Boolean);const detail=c.evidence?.details&&typeof c.evidence.details==="object"?Object.entries(c.evidence.details).map(([k,v])=>esc(k)+": "+esc(v)).join(" · "):"";return '<article class="change '+esc(c.kind)+'"><div class="change-code"><i></i>'+String(i+1).padStart(2,"0")+' / '+esc(c.kind)+'</div><div class="change-identity"><code>'+esc(c.path)+'</code>'+(facts.length?'<div class="meta">'+facts.map(esc).join(" / ")+'</div>':'')+(detail?'<div class="evidence-line"><b>Evidence</b> '+detail+'</div>':'')+'</div><div class="values"><div class="value before"><label>Previous state</label><pre>'+esc(pretty(c.before,c.kind,"before"))+'</pre></div><div class="value after"><label>Revised state</label><pre>'+esc(pretty(c.after,c.kind,"after"))+'</pre></div></div></article>'}).join("")+'</div>':(changes.length?'<div class="empty">No revisions match the current focus.</div>':'<div class="empty">No revisions are recorded for this model.</div>');
- const decisionFacts=[["Analysis",known(m.analysisStatus)?m.analysisStatus:"not reported"],...(known(m.policyStatus)?[["Policy",m.policyStatus]]:[]),["Affected paths",affected],["Topology",nodes.length?nodes.length+" blocks":"not supplied"],...(extractor?[["Evidence source",extractor]]:[])];
+ const decisionFacts=[...(known(m.review?.priority)?[["Review priority",m.review.priority]]:[]),["Analysis",known(m.analysisStatus)?m.analysisStatus:"not reported"],...(known(m.policyStatus)?[["Policy",m.policyStatus]]:[]),["Affected paths",affected],["Topology",nodes.length?nodes.length+" blocks":"not supplied"],...(extractor?[["Evidence source",extractor]]:[])];
  const decisionPanel='<section class="decision-rail"><div class="decision"><h2>Merge assessment</h2><div class="decision-state '+decision.tone+'"><strong>'+esc(decision.title)+'</strong><p>'+esc(decision.detail)+'</p></div><div class="review-facts">'+decisionFacts.map(f=>'<div class="fact"><span>'+esc(f[0])+'</span><b>'+esc(f[1])+'</b></div>').join("")+'</div><div class="review-note"><b>Workflow position</b>Use this review after CI creates the drift artifact and before approving the pull request. The canvas presents evidence; repository policy remains authoritative.</div></div></section>';
  content.innerHTML=phases+'<div class="workspace"><div class="review-main"><section class="folio"><div class="kicker">Model change under review'+(known(m.changeType)?' / '+esc(m.changeType):'')+'</div><h1>'+esc(m.label)+'</h1>'+route+'</section>'+
  '<div class="tape" style="grid-template-columns:repeat('+metrics.length+',minmax(0,1fr))">'+metrics.map(x=>'<div class="metric"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>').join("")+'</div>'+
