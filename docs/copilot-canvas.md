@@ -47,11 +47,13 @@ at a review workflow designed around trust, scope, evidence, and decision.
   </a>
 </p>
 
-The 13-second preview is a screen recording of the Windows GitHub Copilot app
-running the project canvas with the checked-in cardiac digital twin report. It
-shows the real app window, canvas window, mouse interaction, scrolling, filters,
-and merge assessment. No browser recreation, synthetic app frame, or generated
-model view is used. The unrelated app background is blurred for privacy.
+The 42-second preview starts in a blank project session in the Windows GitHub
+Copilot app. It shows the request that opens the checked-in cardiac digital twin
+report, the canvas loading beside the conversation, and the review through
+trust, scope, evidence, filtering, and merge assessment. The prompt, app
+response, canvas, mouse interaction, and scrolling are all recorded from the
+real app. No browser recreation, synthetic app frame, or generated model view
+is used.
 
 Select the preview to open the
 [full-quality recording](assets/copilot-canvas-demo.mp4).
