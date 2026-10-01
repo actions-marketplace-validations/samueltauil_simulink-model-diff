@@ -8,9 +8,9 @@ own project and they do not use a local path.
 
 There are two hosted surfaces:
 
-- the published Action at `samueltauil/simulink-model-diff@v0.4.1`;
+- the published Action at `samueltauil/simulink-model-diff@v0.4.2`;
 - an optional reusable workflow at
-  `samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.4.1`.
+  `samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.4.2`.
 
 The Action is the primary integration. GitHub downloads it from the tagged
 release when it appears in a job's `steps`. The reusable workflow is a wrapper
@@ -20,10 +20,10 @@ These forms are not interchangeable:
 
 ```yaml
 # Published Action: use inside steps.
-- uses: samueltauil/simulink-model-diff@v0.4.1
+- uses: samueltauil/simulink-model-diff@v0.4.2
 
 # Reusable workflow: use at the job level.
-uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.4.1
+uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.4.2
 ```
 
 ## Recommended consumer workflow
@@ -54,7 +54,7 @@ jobs:
 
       - name: Analyze model drift
         id: drift
-        uses: samueltauil/simulink-model-diff@v0.4.1
+        uses: samueltauil/simulink-model-diff@v0.4.2
         with:
           include: |
             models/**/*.slx
@@ -72,7 +72,7 @@ jobs:
 ```
 
 This checks out the consumer repository, then GitHub downloads the Action from
-the `v0.4.1` tag. Consumers do not clone or vendor this project.
+the `v0.4.2` tag. Consumers do not clone or vendor this project.
 
 ## Action inputs and outputs
 
@@ -105,7 +105,7 @@ permissions:
 
 jobs:
   model-drift:
-    uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.4.1
+    uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.4.2
     with:
       include: |
         models/**/*.slx
@@ -206,11 +206,11 @@ trusted refs. See [Runner setup](runner-setup.md).
 
 ## Release pinning
 
-Pin `v0.4.1` for the supported Action contract, or pin the full release commit
+Pin `v0.4.2` for the supported Action contract, or pin the full release commit
 SHA for an immutable supply-chain reference. The optional reusable workflow
 self-references the Action from the same release; do not mix a newer workflow
 contract with an older Action.
 
-The `v0.4.1` tag is also the release boundary for the Python package,
+The `v0.4.2` tag is also the release boundary for the Python package,
 report schemas, action metadata, and workflow contract. Upgrade those surfaces
 together.

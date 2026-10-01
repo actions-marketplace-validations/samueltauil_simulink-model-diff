@@ -3,7 +3,7 @@ description: Analyze Simulink model drift across a pull request and publish a re
 author: Simulink Model Drift Analyzer contributors
 
 branding:
-  icon: git-pull-request
+  icon: layers
   color: blue
 
 inputs:

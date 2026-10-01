@@ -37,7 +37,7 @@ Create and push a signed `vX.Y.Z` tag whose version exactly matches `pyproject.t
 
 The workflow does not publish to PyPI. Add a separate trusted-publishing job only after the project name, publisher, environment protection, and ownership are configured.
 
-For action consumers, publish immutable releases. The PR-native Action contract ships as `v0.4.1`; sample workflows and consumers should pin that exact release or its full commit SHA. Introduce a movable compatibility tag only with an explicit compatibility policy.
+For action consumers, publish immutable releases. The PR-native Action contract ships as `v0.4.2`; sample workflows and consumers should pin that exact release or its full commit SHA. Introduce a movable compatibility tag only with an explicit compatibility policy.
 
 ## Compatibility
 

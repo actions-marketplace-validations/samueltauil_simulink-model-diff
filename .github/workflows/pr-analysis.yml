@@ -99,7 +99,7 @@ jobs:
 
       - name: Analyze Simulink model drift
         id: drift
-        uses: samueltauil/simulink-model-diff@v0.4.1
+        uses: samueltauil/simulink-model-diff@v0.4.2
         with:
           base-ref: ${{ inputs['base-ref'] }}
           head-ref: ${{ inputs['head-ref'] }}

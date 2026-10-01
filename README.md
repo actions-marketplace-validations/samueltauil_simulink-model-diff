@@ -58,7 +58,7 @@ jobs:
 
       - name: Analyze model drift
         id: drift
-        uses: samueltauil/simulink-model-diff@v0.4.1
+        uses: samueltauil/simulink-model-diff@v0.4.2
         with:
           fail-on: error
 

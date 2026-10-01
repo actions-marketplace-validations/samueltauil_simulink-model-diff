@@ -4,6 +4,15 @@ All notable user-visible changes are documented here. The project follows Semant
 
 ## Unreleased
 
+## 0.4.2 - 2026-10-01
+
+### Changed
+
+- Replaced the generic pull-request Marketplace icon with the `layers` icon to
+  better represent hierarchical Simulink model review.
+- Updated package, Action, reusable workflow, sample, and documentation
+  references to the `v0.4.2` release.
+
 ## 0.4.1 - 2026-10-01
 
 ### Changed
