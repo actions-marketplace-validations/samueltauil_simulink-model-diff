@@ -145,8 +145,8 @@ Action result.
   </a>
 </p>
 
-The recording is a real GitHub Copilot app session with the agent conversation
-and canvas visible together. See the
+The recording follows the real public GitHub workflow, pull request diff, and
+Action job before opening the same change in the GitHub Copilot app canvas. See the
 [end-to-end review guide](docs/end-to-end-review.md) for the workflow and the
 [canvas guide](docs/copilot-canvas.md) for installation and troubleshooting.
 

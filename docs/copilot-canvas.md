@@ -50,27 +50,26 @@ at a review workflow designed around trust, scope, evidence, and decision.
   </a>
 </p>
 
-The 42-second preview is a real GitHub Copilot app session. It shows the agent
-conversation beside the canvas while the reviewer checks extraction trust,
-inspects the recorded parameter change, and reaches the qualified-extraction
-decision.
+The 37-second preview follows the workflow from GitHub to the Copilot app. It
+shows the Action configuration, the pull request changing the cardiac dose
+from `60` to `65`, the real Action job, and the resulting canvas review.
 
 Select the preview to open the
 [full-quality recording](assets/copilot-canvas-demo.mp4).
 
 | Stage | What the video shows |
 | --- | --- |
-| Install | The public repository and published Action |
-| Configure | The evidence-aware workflow with JUnit and SARIF inputs |
-| Analyze | A successful public workflow run and retained reports |
-| Scope | One changed model, one direct dependent, and one transitive dependent |
-| Evidence | A SARIF warning, passing JUnit test, interface type change, and gain change |
-| Decision | Complete analysis, passed policy, and a required reviewer decision |
+| Install | The public repository's GitHub Action entry point |
+| Configure | A workflow using `samueltauil/simulink-model-diff@v0.5.0` and uploading `build/model-drift` |
+| Pull request | The cardiac model parameter changes from `60` to `65` |
+| Action result | Analysis is blocked, but the report upload step still completes |
+| Copilot review | The PR artifact opens beside the agent conversation with the same `60` to `65` evidence |
+| Decision | Partial evidence requires a qualified extraction before merge |
 
-The footage is captured from the running Copilot app, not from a browser
-recreation or a rendered montage. It uses the checked-in cardiac model report,
-which intentionally has partial extraction status so the recording shows the
-trust boundary instead of presenting an unsafe clean approval.
+The GitHub pages and Copilot app are real recordings, not a browser recreation
+or rendered product mock. The edit removes page loads and idle time. The demo
+uses a partial report so the canvas shows the trust boundary instead of
+presenting an unsafe clean approval.
 
 Read the [end-to-end review guide](end-to-end-review.md) for the workflow,
 benefits, evidence boundaries, and comparison with the MathWorks example.

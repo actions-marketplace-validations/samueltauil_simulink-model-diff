@@ -119,10 +119,14 @@ model, or override branch protection.
   </a>
 </p>
 
-The 42-second video is a real screen recording of the GitHub Copilot app. It
-shows the agent conversation beside the live canvas, the partial trust state,
-the recorded `60` to `65` parameter change, and the qualified-extraction
-decision. Nothing is composited or rendered over the application.
+The 37-second video starts on the public GitHub repository, opens the Action
+workflow, shows the pull request changing the dose from `60` to `65`, and
+checks the real workflow job that preserved the reports. It then moves to the
+GitHub Copilot app, where the same change appears in the canvas with its
+partial trust state and qualified-extraction decision.
+
+The GitHub pages and Copilot app are real recordings. The edit only removes
+waiting time and joins the two parts of the workflow.
 
 Select the preview to open the full MP4.
 
