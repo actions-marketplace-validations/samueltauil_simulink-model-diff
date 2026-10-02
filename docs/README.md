@@ -8,6 +8,7 @@ Use this index to find the shortest path for the task at hand.
 
 | Guide | Audience | Covers |
 | --- | --- | --- |
+| [End-to-end review](end-to-end-review.md) | Model teams | Complete pull request workflow, evidence types, benefits, and product boundaries |
 | [Getting started](getting-started.md) | Repository maintainers | Install the Action, read the first result, and open the canvas |
 | [GitHub Actions](github-actions.md) | CI maintainers | Inputs, outputs, permissions, reusable workflow, artifacts, and SARIF |
 | [Copilot app canvas](copilot-canvas.md) | Model reviewers | Install the canvas, inspect evidence, and troubleshoot the panel |

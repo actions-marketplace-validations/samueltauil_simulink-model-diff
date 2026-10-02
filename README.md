@@ -14,7 +14,7 @@ versions, applies repository policy, and builds a reviewer queue from the
 result.
 
 <p align="center">
-  <img src="docs/assets/copilot-canvas-review.png" alt="Simulink Model Diff canvas showing extraction trust, changed models, evidence, and merge assessment" width="100%">
+  <img src="docs/assets/end-to-end-review.png" alt="Simulink Model Drift workflow from Action installation through impact-aware Copilot review" width="100%">
 </p>
 
 ## What you get
@@ -27,6 +27,9 @@ result.
 
 The Action produces the evidence. The canvas reads the same JSON. Branch
 protection and repository policy remain authoritative.
+
+Read the [end-to-end review guide](docs/end-to-end-review.md) for the complete
+setup and reviewer path.
 
 ## Add it to a repository
 
@@ -142,9 +145,10 @@ Action result.
   </a>
 </p>
 
-The recording uses a real Action artifact and a real GitHub Copilot app session.
-See the [canvas guide](docs/copilot-canvas.md) for installation, the full review
-sequence, and troubleshooting.
+The recording uses real public GitHub pages and a real impact-aware GitHub
+Copilot app canvas. See the
+[end-to-end review guide](docs/end-to-end-review.md) for the workflow and the
+[canvas guide](docs/copilot-canvas.md) for installation and troubleshooting.
 
 ## Trust and licensed extraction
 
@@ -182,6 +186,7 @@ Start with the [documentation index](docs/README.md).
 
 | Guide | Use it for |
 | --- | --- |
+| [End-to-end review](docs/end-to-end-review.md) | Complete pull request workflow, benefits, and differentiators |
 | [Getting started](docs/getting-started.md) | First Action run and first canvas review |
 | [GitHub Actions](docs/github-actions.md) | Inputs, outputs, reusable workflow, and SARIF |
 | [Copilot app canvas](docs/copilot-canvas.md) | Installation, review workflow, and troubleshooting |

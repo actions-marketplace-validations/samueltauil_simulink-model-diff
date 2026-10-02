@@ -65,7 +65,9 @@ finally a merge assessment. Treat that assessment as review guidance, not as a
 replacement for the Action check or branch protection.
 
 Reports generated locally open from the same default path without the download
-step. See [the canvas guide](copilot-canvas.md) for installation details.
+step. Follow the [end-to-end review guide](end-to-end-review.md) for the full
+review sequence, or see [the canvas guide](copilot-canvas.md) for installation
+details.
 
 The PR event supplies refs automatically. Pass `base-ref` and `head-ref` for
 `workflow_dispatch`, scheduled runs, or another event without PR SHAs.
