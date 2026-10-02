@@ -8,7 +8,7 @@ other models depend on the change. Simulink Model Drift adds that review layer
 without replacing repository policy or the official Simulink tools.
 
 <p align="center">
-  <img src="assets/end-to-end-review.png" alt="Four-step Simulink model review workflow: install the Action, analyze the pull request, inspect impact and evidence, and make the review decision" width="100%">
+  <img src="assets/copilot-canvas-review.png" alt="Real GitHub Copilot app session showing the Simulink Model Drift canvas beside the agent conversation" width="100%">
 </p>
 
 ## Set it up
@@ -119,11 +119,10 @@ model, or override branch protection.
   </a>
 </p>
 
-The 54-second video uses the public repository pages and a real Copilot app
-canvas loaded with a schema `0.2.0` report. The report includes a changed leaf
-model, one direct dependent, one transitive dependent, a SARIF warning, a
-passing JUnit test, an interface type change from `double` to `single`, and a
-gain change from `2.5` to `3.0`.
+The 42-second video is a real screen recording of the GitHub Copilot app. It
+shows the agent conversation beside the live canvas, the partial trust state,
+the recorded `60` to `65` parameter change, and the qualified-extraction
+decision. Nothing is composited or rendered over the application.
 
 Select the preview to open the full MP4.
 
@@ -147,4 +146,3 @@ This project handles the GitHub review contract around that evidence:
 The two approaches work together. A MathWorks-backed extractor can supply
 qualified semantic evidence while this project carries it through policy,
 impact analysis, CI artifacts, and human review.
-

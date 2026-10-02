@@ -14,7 +14,7 @@ versions, applies repository policy, and builds a reviewer queue from the
 result.
 
 <p align="center">
-  <img src="docs/assets/end-to-end-review.png" alt="Simulink Model Drift workflow from Action installation through impact-aware Copilot review" width="100%">
+  <img src="docs/assets/copilot-canvas-review.png" alt="Real GitHub Copilot app session showing the Simulink Model Drift canvas beside the agent conversation" width="100%">
 </p>
 
 ## What you get
@@ -145,8 +145,8 @@ Action result.
   </a>
 </p>
 
-The recording uses real public GitHub pages and a real impact-aware GitHub
-Copilot app canvas. See the
+The recording is a real GitHub Copilot app session with the agent conversation
+and canvas visible together. See the
 [end-to-end review guide](docs/end-to-end-review.md) for the workflow and the
 [canvas guide](docs/copilot-canvas.md) for installation and troubleshooting.
 
