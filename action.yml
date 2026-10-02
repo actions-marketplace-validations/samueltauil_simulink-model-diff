@@ -40,6 +40,23 @@ inputs:
       Use {artifact} as the path placeholder. Never expose secrets to untrusted models.
     required: false
     default: ""
+  context-scan:
+    description: >-
+      Repository relationship scan mode (off, advisory, or required). The scan
+      reads model package structure without executing MATLAB.
+    required: false
+    default: required
+  evidence:
+    description: >-
+      Optional newline- or comma-separated repository-relative SARIF or JUnit files.
+    required: false
+    default: ""
+  required-evidence:
+    description: >-
+      Required newline- or comma-separated repository-relative SARIF or JUnit files.
+      Missing, malformed, or failing evidence blocks review.
+    required: false
+    default: ""
   python-version:
     description: Python version installed by actions/setup-python.
     required: false
@@ -64,6 +81,18 @@ outputs:
   exit-code:
     description: Analyzer exit code; see docs/cli.md.
     value: ${{ steps.pr.outputs['exit-code'] }}
+  context-status:
+    description: Repository relationship context status (complete, partial, failed, or disabled).
+    value: ${{ steps.pr.outputs['context-status'] }}
+  evidence-status:
+    description: External evidence status (clear, review-required, or blocked).
+    value: ${{ steps.pr.outputs['evidence-status'] }}
+  affected-models:
+    description: Number of directly or transitively affected dependent models.
+    value: ${{ steps.pr.outputs['affected-models'] }}
+  missing-evidence:
+    description: Number of required evidence files that were missing.
+    value: ${{ steps.pr.outputs['missing-evidence'] }}
 
 runs:
   using: composite
@@ -92,6 +121,9 @@ runs:
         INPUT_OUTPUT: ${{ inputs.output }}
         INPUT_FAIL_ON: ${{ inputs['fail-on'] }}
         INPUT_EXTRACTOR_COMMAND: ${{ inputs['extractor-command'] }}
+        INPUT_CONTEXT_SCAN: ${{ inputs['context-scan'] }}
+        INPUT_EVIDENCE: ${{ inputs.evidence }}
+        INPUT_REQUIRED_EVIDENCE: ${{ inputs['required-evidence'] }}
         EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         EVENT_BEFORE_SHA: ${{ github.event.before }}
@@ -114,6 +146,13 @@ runs:
             exit 2
             ;;
         esac
+        case "$INPUT_CONTEXT_SCAN" in
+          off|advisory|required) ;;
+          *)
+            echo "context-scan must be one of: off, advisory, required" >&2
+            exit 2
+            ;;
+        esac
 
         command=(
           simulink-model-drift pr
@@ -121,6 +160,7 @@ runs:
           --head-ref "$head_ref"
           --output "$INPUT_OUTPUT"
           --fail-on "$INPUT_FAIL_ON"
+          --context-scan "$INPUT_CONTEXT_SCAN"
         )
 
         if [[ -n "$INPUT_RULES" ]]; then
@@ -136,6 +176,16 @@ runs:
         if [[ -n "$INPUT_EXTRACTOR_COMMAND" ]]; then
           command+=(--extractor-command "$INPUT_EXTRACTOR_COMMAND")
         fi
+        while IFS= read -r evidence; do
+          evidence="${evidence#"${evidence%%[![:space:]]*}"}"
+          evidence="${evidence%"${evidence##*[![:space:]]}"}"
+          [[ -n "$evidence" ]] && command+=(--evidence "$evidence")
+        done < <(printf '%s\n' "$INPUT_EVIDENCE" | tr ',' '\n')
+        while IFS= read -r evidence; do
+          evidence="${evidence#"${evidence%%[![:space:]]*}"}"
+          evidence="${evidence%"${evidence##*[![:space:]]}"}"
+          [[ -n "$evidence" ]] && command+=(--required-evidence "$evidence")
+        done < <(printf '%s\n' "$INPUT_REQUIRED_EVIDENCE" | tr ',' '\n')
 
         set +e
         "${command[@]}"
@@ -146,12 +196,21 @@ runs:
         summary_markdown="$INPUT_OUTPUT/model-drift-summary.md"
         sarif="$INPUT_OUTPUT/model-drift.sarif"
         review_status=""
+        context_status=""
+        evidence_status=""
+        affected_models="0"
+        missing_evidence="0"
         if [[ -f "$index_json" ]]; then
-          review_status="$(
+          readarray -t index_values < <(
             python -c \
-              'import json, sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("reviewPlan", {}).get("status", ""))' \
+              'import json, sys; d=json.load(open(sys.argv[1], encoding="utf-8")); print(d.get("reviewPlan", {}).get("status", "")); print(d.get("repositoryContext", {}).get("status", "")); print(d.get("externalEvidence", {}).get("status", "")); print(d.get("summary", {}).get("affectedModels", 0)); print(d.get("externalEvidence", {}).get("summary", {}).get("missingRequired", 0))' \
               "$index_json"
-          )"
+          )
+          review_status="${index_values[0]:-}"
+          context_status="${index_values[1]:-}"
+          evidence_status="${index_values[2]:-}"
+          affected_models="${index_values[3]:-0}"
+          missing_evidence="${index_values[4]:-0}"
         fi
 
         {
@@ -161,6 +220,10 @@ runs:
           [[ -f "$sarif" ]] && echo "sarif=$sarif" || echo "sarif="
           echo "review-status=$review_status"
           echo "exit-code=$status"
+          echo "context-status=$context_status"
+          echo "evidence-status=$evidence_status"
+          echo "affected-models=$affected_models"
+          echo "missing-evidence=$missing_evidence"
         } >> "$GITHUB_OUTPUT"
 
         if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then

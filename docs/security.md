@@ -37,6 +37,26 @@ Fork PRs run analysis on a GitHub-hosted runner without secrets. SARIF upload is
 
 Loading `.slx` or `.mdl` can involve callbacks, scripts, custom code, references, libraries, dictionaries, and product-specific behavior. Canonical manifest comparison does not execute those features. A semantic extractor must run in a dedicated, disposable environment with explicit policy and bounded resources.
 
+## Structural relationship scan
+
+The bundled repository scanner uses the public `data-explorer-core` parser to
+read saved `.slx` and `.mdl` package structure. It does not start MATLAB, load a
+model, run callbacks, execute project startup files, or evaluate repository
+code. Base and head files are materialized from exact Git objects into bounded
+temporary directories.
+
+The result is labeled `structural-non-semantic`. Parse failures, unresolved
+references, and cycles remain visible. The scanner cannot produce a complete
+semantic result or override extractor trust.
+
+## External evidence
+
+SARIF and JUnit files are untrusted input. The analyzer restricts them to the
+repository, caps each file at 64 MiB, limits normalized records, and parses
+them without executing producer code. Required files that are absent or
+malformed block review. Imported evidence may make a result stricter, but it
+cannot make incomplete model extraction clean.
+
 ## Report safety
 
 Model paths, names, parameters, and rule messages are untrusted. Reporters must escape content for Markdown and SARIF, normalize repository-relative paths, validate schemas, and avoid secrets or proprietary details in logs. Incomplete extraction must remain an explicit result.

@@ -1,0 +1,44 @@
+name: Simulink model drift with test evidence
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up MATLAB and Simulink
+        uses: matlab-actions/setup-matlab@v3
+        with:
+          products: Simulink
+
+      - name: Run MATLAB and Simulink tests
+        uses: matlab-actions/run-tests@v3
+        with:
+          test-results-junit: build/test-results.xml
+
+      # Pin the next release tag before using this contract in a protected workflow.
+      - name: Analyze model drift and required test evidence
+        uses: samueltauil/simulink-model-diff@v0.5.0
+        with:
+          context-scan: required
+          required-evidence: build/test-results.xml
+          fail-on: error
+
+      - name: Upload review reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: simulink-model-drift-${{ github.run_id }}
+          path: build/model-drift
+          if-no-files-found: warn

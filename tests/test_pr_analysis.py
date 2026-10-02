@@ -119,6 +119,8 @@ def _run(
     extractor: str | None = None,
     *,
     fail_on: str = "none",
+    context_scan: str = "advisory",
+    required_evidence: str | None = None,
 ) -> int:
     arguments = [
         "pr",
@@ -128,9 +130,13 @@ def _run(
         str(output),
         "--fail-on",
         fail_on,
+        "--context-scan",
+        context_scan,
     ]
     if extractor:
         arguments.extend(["--extractor-command", extractor])
+    if required_evidence:
+        arguments.extend(["--required-evidence", required_evidence])
     arguments.append(str(repository))
     return main(arguments)
 
@@ -182,6 +188,9 @@ def test_pr_no_changed_models_is_successful_and_useful(tmp_path: Path) -> None:
     assert index["summary"]["changedModels"] == 0  # type: ignore[index]
     assert index["reviewPlan"]["status"] == "clear"  # type: ignore[index]
     assert index["reviewPlan"]["orderedModelIds"] == []  # type: ignore[index]
+    assert index["schemaVersion"] == "0.2.0"
+    assert index["repositoryContext"]["trust"] == "structural-non-semantic"  # type: ignore[index]
+    assert index["externalEvidence"]["status"] == "clear"  # type: ignore[index]
     assert index["models"] == []
     assert not (output / "models").exists()
     assert "No changed Simulink model files" in (
@@ -384,6 +393,37 @@ def test_pr_incomplete_analysis_is_fail_closed_with_reports(tmp_path: Path) -> N
     assert index["reviewPlan"]["status"] == "blocked"  # type: ignore[index]
     assert index["models"][0]["review"]["summary"] == (  # type: ignore[index]
         "Qualified extraction required"
+    )
+
+
+def test_pr_missing_required_evidence_blocks_review_but_preserves_reports(
+    tmp_path: Path,
+) -> None:
+    repository = _repository(tmp_path)
+    _write_model(repository, "controller.slx", _manifest())
+    base = _commit(repository, "base")
+    _write_model(repository, "controller.slx", _manifest(TARGET_FIXTURE))
+    _commit(repository, "change model")
+    output = tmp_path / "output"
+
+    result = _run(
+        repository,
+        base,
+        output,
+        _extractor(tmp_path),
+        context_scan="off",
+        required_evidence="build/test-results.xml",
+    )
+
+    assert result == ExitCode.POLICY_FAILURE
+    index = _index(output)
+    assert index["reviewPlan"]["status"] == "blocked"  # type: ignore[index]
+    assert index["externalEvidence"]["status"] == "blocked"  # type: ignore[index]
+    assert index["externalEvidence"]["summary"]["missingRequired"] == 1  # type: ignore[index]
+    sarif = json.loads((output / "model-drift.sarif").read_text(encoding="utf-8"))
+    assert any(
+        run["tool"]["driver"]["name"] == "simulink-model-drift"
+        for run in sarif["runs"]
     )
 
 

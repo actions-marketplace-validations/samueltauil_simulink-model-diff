@@ -10,6 +10,7 @@ venv/
 dist/
 build/
 htmlcov/
+tools/context-scanner/node_modules/
 
 # Analyzer outputs and local MATLAB artifacts
 model-drift-output/

@@ -7,7 +7,7 @@
 Copy [`samples/github-actions/canonical-pr.yml`](../samples/github-actions/canonical-pr.yml) to `.github/workflows/simulink-model-drift.yml`. Adjust `include` and `rules` for the repository, then pin the workflow to the reviewed release or commit SHA.
 
 The workflow checks out the consumer repository and runs
-`samueltauil/simulink-model-diff@v0.4.2` from the published release. It
+`samueltauil/simulink-model-diff@v0.5.0` from the published release. It
 discovers changed models between the event's base and head SHAs, writes an
 aggregate job summary, and retains the complete report directory.
 

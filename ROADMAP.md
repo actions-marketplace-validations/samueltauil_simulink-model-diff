@@ -4,12 +4,14 @@ The roadmap describes direction, not a delivery commitment. Compatibility claims
 
 ## Now: PR-native analysis product
 
-- Maintain the released `v0.4.2` PR command, composite action, and reusable workflow as one compatible contract.
+- Maintain the `v0.5.0` PR command, composite action, and reusable workflow as one compatible contract.
 - Discover changed models from base/head refs and emit aggregate plus per-model evidence.
 - Keep the review plan, Action output, job summary, and canvas queue on one deterministic priority contract.
 - Keep fork PR analysis on GitHub-hosted runners with read-only permissions.
 - Stabilize aggregate index, Markdown, and SARIF contracts through real integrations.
 - Expand include-glob, rename, deletion, multi-model, and SARIF fixtures.
+- Stabilize repository relationship impact and external SARIF and JUnit
+  evidence as part of the aggregate review contract.
 
 ## Next: supported semantic adapters
 
@@ -33,6 +35,8 @@ The roadmap describes direction, not a delivery commitment. Compatibility claims
 - Richer subsystem, interface, reference, and Stateflow visualization.
 - Extensible rules with stable identifiers and migration guidance.
 - Optional integrations for check summaries or comments in a separate trusted workflow.
+- Optional handoff from a blocked review to the Simulink Agentic Toolkit in a
+  trusted licensed session.
 
 ## Not planned as implicit behavior
 

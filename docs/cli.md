@@ -13,6 +13,8 @@ simulink-model-drift pr \
   --rules <path> \
   --output <dir> \
   --include "models/**/*.slx" \
+  --context-scan required \
+  --required-evidence build/test-results.xml \
   --fail-on error
 ```
 
@@ -20,6 +22,16 @@ Repeat `--include` for additional globs. Add `--extractor-command` for model
 artifacts that require a reviewed canonical extractor. The command writes
 `model-drift-index.json`, `model-drift-summary.md`, `model-drift.sarif`, and
 per-model reports beneath the output directory.
+
+`--context-scan` accepts `off`, `advisory`, or `required`. The default CLI mode
+is `advisory`; the published Action uses `required`. The scanner reads model
+relationships without executing MATLAB. A required scan that is partial or
+failed blocks review.
+
+Repeat `--evidence` for optional SARIF or JUnit files. Repeat
+`--required-evidence` for files that must exist and parse successfully. SARIF
+errors, JUnit failures or errors, and missing required files return exit code
+3 while preserving the reports.
 
 The GitHub Action supplies PR refs from the event when its ref inputs are
 empty. Direct CLI callers must provide both refs.
@@ -88,7 +100,7 @@ output directory in a subdirectory named for the pair ID.
 | 0 | Successful, complete analysis with no policy failure |
 | 1 | Readiness/inspection result is not ready or not complete |
 | 2 | Invalid CLI input, configuration, rule file, JSON, or contract |
-| 3 | Policy threshold was met |
+| 3 | Policy or external evidence threshold was met |
 | 4 | Reports were produced, but analysis was incomplete |
 | 5 | Semantic extraction was unavailable or failed |
 

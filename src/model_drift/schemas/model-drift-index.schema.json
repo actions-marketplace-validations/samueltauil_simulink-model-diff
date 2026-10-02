@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/samueltauil/simulink-model-diff/model-drift-index/0.2.0",
+  "title": "Simulink Model Drift aggregate index",
+  "type": "object",
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "baseRef",
+    "headRef",
+    "status",
+    "summary",
+    "reviewPlan",
+    "repositoryContext",
+    "externalEvidence",
+    "models",
+    "failures"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": "0.2.0" },
+    "baseRef": { "type": "string" },
+    "headRef": { "type": "string" },
+    "baseCommit": { "type": "string" },
+    "headCommit": { "type": "string" },
+    "includes": { "type": "array", "items": { "type": "string" } },
+    "status": { "enum": ["complete", "incomplete", "failed"] },
+    "summary": { "type": "object" },
+    "reviewPlan": { "type": "object" },
+    "repositoryContext": {
+      "type": "object",
+      "required": [
+        "status",
+        "trust",
+        "nodes",
+        "edges",
+        "directlyAffectedModels",
+        "transitivelyAffectedModels",
+        "unresolvedReferences",
+        "errors"
+      ],
+      "properties": {
+        "status": { "enum": ["complete", "partial", "failed", "disabled"] },
+        "trust": { "const": "structural-non-semantic" },
+        "nodes": { "type": "array" },
+        "edges": { "type": "array" },
+        "directlyAffectedModels": { "type": "array", "items": { "type": "string" } },
+        "transitivelyAffectedModels": { "type": "array", "items": { "type": "string" } },
+        "unresolvedReferences": { "type": "array" },
+        "errors": { "type": "array" }
+      },
+      "additionalProperties": true
+    },
+    "externalEvidence": {
+      "type": "object",
+      "required": ["status", "sources", "findings", "tests", "summary"],
+      "properties": {
+        "status": { "enum": ["clear", "review-required", "blocked"] },
+        "sources": { "type": "array" },
+        "findings": { "type": "array" },
+        "tests": { "type": "array" },
+        "summary": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "models": { "type": "array", "items": { "type": "object" } },
+    "failures": { "type": "array", "items": { "type": "object" } }
+  },
+  "additionalProperties": false
+}

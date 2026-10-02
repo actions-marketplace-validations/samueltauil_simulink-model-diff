@@ -18,6 +18,11 @@ def build_model_review(record: Mapping[str, Any]) -> dict[str, Any]:
     profile = _mapping(record.get("changeProfile"))
     classifications = _mapping(profile.get("classifications"))
     categories = _mapping(profile.get("categories"))
+    impact = _mapping(record.get("impact"))
+    external = _mapping(record.get("externalEvidence"))
+    external_summary = _mapping(external.get("summary"))
+    external_findings = _mapping(external_summary.get("findings"))
+    external_tests = _mapping(external_summary.get("tests"))
 
     reasons: list[str] = []
     if status == "failed":
@@ -32,6 +37,16 @@ def build_model_review(record: Mapping[str, Any]) -> dict[str, Any]:
         reasons.append("functional-change")
     if _count(classifications, "potentially-functional"):
         reasons.append("potentially-functional-change")
+    if impact.get("directDependents") or impact.get("transitiveDependents"):
+        reasons.append("dependent-models-affected")
+    if _count(external_findings, "error"):
+        reasons.append("external-error")
+    if _count(external_findings, "warning"):
+        reasons.append("external-warning")
+    if _count(external_tests, "failed") or _count(external_tests, "error"):
+        reasons.append("test-failure")
+    if record.get("contextRequired") and record.get("contextStatus") != "complete":
+        reasons.append("repository-context-failed")
 
     change_count = sum(
         _count(summary, key) for key in ("added", "removed", "modified", "moved")
@@ -49,10 +64,20 @@ def build_model_review(record: Mapping[str, Any]) -> dict[str, Any]:
         priority = "blocked"
         summary_text = "Qualified extraction required"
         action = "Run the approved qualified extractor before approval."
-    elif policy == "failed":
+    elif policy == "failed" and not any(
+        reason in reasons
+        for reason in ("external-error", "test-failure", "repository-context-failed")
+    ):
         priority = "blocked"
         summary_text = "Policy gate failed"
         action = "Resolve policy findings before approval."
+    elif any(
+        reason in reasons
+        for reason in ("external-error", "test-failure", "repository-context-failed")
+    ):
+        priority = "blocked"
+        summary_text = "Review evidence gate failed"
+        action = "Resolve policy, test, context, and external evidence failures before approval."
     elif any(
         reason in reasons
         for reason in (
@@ -62,8 +87,16 @@ def build_model_review(record: Mapping[str, Any]) -> dict[str, Any]:
         )
     ):
         priority = "high"
-        summary_text = "Behavior or interface review required"
-        action = "Confirm intended behavior, compatibility, and supporting tests."
+        summary_text = (
+            "Dependent models require focused review"
+            if "dependent-models-affected" in reasons
+            else "Behavior or interface review required"
+        )
+        action = "Confirm intended behavior, dependent compatibility, and supporting tests."
+    elif "external-warning" in reasons:
+        priority = "normal"
+        summary_text = "External quality review required"
+        action = "Review imported quality findings before approval."
     elif change_count:
         priority = "normal"
         summary_text = "Recorded model drift"

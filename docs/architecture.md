@@ -14,8 +14,12 @@ flowchart LR
     C --> A[Composite action]
     A --> P[PR CLI command]
     P --> X[Changed model discovery]
+    P --> Z[Repository relationship scan]
+    P --> N[External SARIF and JUnit evidence]
     X --> M[Canonical model manifests]
     M --> D[Drift and policy evaluation]
+    Z --> D
+    N --> D
     D --> K[Deterministic review plan]
     K --> R[Aggregate and per-model reports]
     D --> G[Action check result]
@@ -35,6 +39,16 @@ SARIF permissions for teams that prefer a job-level call. Both paths reach the
 same composite Action, which wraps `simulink-model-drift pr` without requesting
 repository permissions. The Python package handles discovery, extraction,
 comparison, policy, and reporting.
+
+The bundled relationship scanner is a separate Node process built from
+MathWorks `data-explorer-core`. It reads `.slx` and `.mdl` files from base and
+head snapshots and returns model references, linked dictionaries, and external
+data sources. Python validates that output, resolves repository paths, detects
+cycles and missing targets, and computes reverse impact.
+
+External SARIF and JUnit files are caller-owned inputs. The analyzer normalizes
+their tool identity, outcomes, and model mapping into the aggregate review
+contract. It never runs the tools that produced those files.
 
 The Action check and the canvas have separate jobs. The Action enforces the
 configured policy in CI. The canvas is a GitHub Copilot app extension that
@@ -77,6 +91,11 @@ drift. The same order appears in the job summary and the canvas model queue.
 This is reviewer prioritization, not another policy gate; the underlying
 analysis status and policy findings remain authoritative.
 
+Schema version `0.2.0` adds `repositoryContext`, `externalEvidence`, and
+per-model `impact` and `externalEvidence` records. Imported errors, failed
+tests, and missing required evidence block review. Imported warnings require
+review. None of those records can raise semantic extraction trust.
+
 ## Semantic boundary
 
 Canonical manifests remain the semantic contract. `.slx` or `.mdl` analysis
@@ -88,6 +107,10 @@ Only `complete` analysis supports a clean "no drift" conclusion. `partial`,
 `unsupported`, and `failed` states remain visible in aggregate and per-model
 reports. The canvas carries the same status into its merge assessment instead
 of treating incomplete evidence as a clean result.
+
+Repository relationships are labeled `structural-non-semantic`. They establish
+review scope and affected dependents, but they do not prove behavioral
+equivalence or semantic completeness.
 
 ## Lower-level interfaces
 

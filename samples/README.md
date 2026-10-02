@@ -35,3 +35,11 @@ Open the Simulink Model Diff canvas for samples/cardiac-digital-twin/drift.json
 The controller fixture under `canonical/` remains the small
 deterministic regression sample. It is intentionally compact; the cardiac
 sample is the richer, domain-realistic example for visual review.
+
+## GitHub Actions
+
+- `github-actions/canonical-pr.yml` is the minimal public pull-request workflow.
+- `github-actions/licensed-slx.yml` is the manually approved licensed extraction
+  workflow.
+- `github-actions/evidence-aware-pr.yml` runs official MATLAB tests and requires
+  their JUnit result before model review can pass.

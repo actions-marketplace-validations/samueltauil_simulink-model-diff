@@ -41,6 +41,21 @@ on:
         required: false
         type: string
         default: ""
+      context-scan:
+        description: Repository relationship scan mode (off, advisory, or required).
+        required: false
+        type: string
+        default: required
+      evidence:
+        description: Optional SARIF or JUnit evidence files.
+        required: false
+        type: string
+        default: ""
+      required-evidence:
+        description: Required SARIF or JUnit evidence files.
+        required: false
+        type: string
+        default: ""
       python-version:
         description: Python version for the analyzer.
         required: false
@@ -75,6 +90,18 @@ on:
       exit-code:
         description: Analyzer exit code.
         value: ${{ jobs.analyze.outputs['exit-code'] }}
+      context-status:
+        description: Repository relationship context status.
+        value: ${{ jobs.analyze.outputs['context-status'] }}
+      evidence-status:
+        description: External evidence status.
+        value: ${{ jobs.analyze.outputs['evidence-status'] }}
+      affected-models:
+        description: Number of affected dependent models.
+        value: ${{ jobs.analyze.outputs['affected-models'] }}
+      missing-evidence:
+        description: Number of missing required evidence files.
+        value: ${{ jobs.analyze.outputs['missing-evidence'] }}
 
 jobs:
   analyze:
@@ -90,6 +117,10 @@ jobs:
       sarif: ${{ steps.drift.outputs.sarif }}
       review-status: ${{ steps.drift.outputs['review-status'] }}
       exit-code: ${{ steps.drift.outputs['exit-code'] }}
+      context-status: ${{ steps.drift.outputs['context-status'] }}
+      evidence-status: ${{ steps.drift.outputs['evidence-status'] }}
+      affected-models: ${{ steps.drift.outputs['affected-models'] }}
+      missing-evidence: ${{ steps.drift.outputs['missing-evidence'] }}
     steps:
       - name: Check out pull request history
         uses: actions/checkout@v7
@@ -99,7 +130,7 @@ jobs:
 
       - name: Analyze Simulink model drift
         id: drift
-        uses: samueltauil/simulink-model-diff@v0.4.2
+        uses: samueltauil/simulink-model-diff@v0.5.0
         with:
           base-ref: ${{ inputs['base-ref'] }}
           head-ref: ${{ inputs['head-ref'] }}
@@ -108,6 +139,9 @@ jobs:
           output: ${{ inputs.output }}
           fail-on: ${{ inputs['fail-on'] }}
           extractor-command: ${{ inputs['extractor-command'] }}
+          context-scan: ${{ inputs['context-scan'] }}
+          evidence: ${{ inputs.evidence }}
+          required-evidence: ${{ inputs['required-evidence'] }}
           python-version: ${{ inputs['python-version'] }}
 
       - name: Upload model drift reports

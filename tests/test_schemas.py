@@ -34,6 +34,46 @@ def _schema(filename: str) -> dict[str, object]:
 def test_schemas_are_valid_draft_2020_12_documents() -> None:
     Draft202012Validator.check_schema(_schema("canonical-model.schema.json"))
     Draft202012Validator.check_schema(_schema("drift-manifest.schema.json"))
+    Draft202012Validator.check_schema(_schema("model-drift-index.schema.json"))
+
+
+def test_minimal_aggregate_index_validates() -> None:
+    index = {
+        "$schema": (
+            "https://github.com/samueltauil/simulink-model-diff/"
+            "model-drift-index/0.2.0"
+        ),
+        "schemaVersion": "0.2.0",
+        "baseRef": "base",
+        "headRef": "head",
+        "baseCommit": "a" * 40,
+        "headCommit": "b" * 40,
+        "includes": ["**/*.slx"],
+        "status": "complete",
+        "summary": {},
+        "reviewPlan": {},
+        "repositoryContext": {
+            "status": "complete",
+            "trust": "structural-non-semantic",
+            "nodes": [],
+            "edges": [],
+            "directlyAffectedModels": [],
+            "transitivelyAffectedModels": [],
+            "unresolvedReferences": [],
+            "errors": [],
+        },
+        "externalEvidence": {
+            "status": "clear",
+            "sources": [],
+            "findings": [],
+            "tests": [],
+            "summary": {},
+        },
+        "models": [],
+        "failures": [],
+    }
+
+    Draft202012Validator(_schema("model-drift-index.schema.json")).validate(index)
 
 
 def test_minimal_canonical_manifest_validates() -> None:

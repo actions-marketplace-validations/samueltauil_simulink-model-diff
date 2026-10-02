@@ -24,7 +24,7 @@ jobs:
 
       - name: Analyze model drift
         id: drift
-        uses: samueltauil/simulink-model-diff@v0.4.2
+        uses: samueltauil/simulink-model-diff@v0.5.0
         with:
           include: |
             models/**/*.slx

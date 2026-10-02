@@ -8,9 +8,9 @@ own project and they do not use a local path.
 
 There are two hosted surfaces:
 
-- the published Action at `samueltauil/simulink-model-diff@v0.4.2`;
+- the published Action at `samueltauil/simulink-model-diff@v0.5.0`;
 - an optional reusable workflow at
-  `samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.4.2`.
+  `samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.5.0`.
 
 The Action is the primary integration. GitHub downloads it from the tagged
 release when it appears in a job's `steps`. The reusable workflow is a wrapper
@@ -20,10 +20,10 @@ These forms are not interchangeable:
 
 ```yaml
 # Published Action: use inside steps.
-- uses: samueltauil/simulink-model-diff@v0.4.2
+- uses: samueltauil/simulink-model-diff@v0.5.0
 
 # Reusable workflow: use at the job level.
-uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.4.2
+uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.5.0
 ```
 
 ## Recommended consumer workflow
@@ -54,7 +54,7 @@ jobs:
 
       - name: Analyze model drift
         id: drift
-        uses: samueltauil/simulink-model-diff@v0.4.2
+        uses: samueltauil/simulink-model-diff@v0.5.0
         with:
           include: |
             models/**/*.slx
@@ -72,7 +72,7 @@ jobs:
 ```
 
 This checks out the consumer repository, then GitHub downloads the Action from
-the `v0.4.2` tag. Consumers do not clone or vendor this project.
+the `v0.5.0` tag. Consumers do not clone or vendor this project.
 
 ## Action inputs and outputs
 
@@ -85,13 +85,36 @@ the `v0.4.2` tag. Consumers do not clone or vendor this project.
 | `output` | `build/model-drift` | Aggregate and per-model report directory |
 | `fail-on` | `error` | `none`, `warning`, or `error` |
 | `extractor-command` | empty | Optional non-privileged canonical extractor command |
+| `context-scan` | `required` | `off`, `advisory`, or `required` structural relationship scan |
+| `evidence` | empty | Optional SARIF or JUnit files |
+| `required-evidence` | empty | Required SARIF or JUnit files; missing or failing evidence blocks review |
 | `python-version` | `3.12` | Python runtime |
 
 The Action outputs `output`, `index-json`, `summary-markdown`, `sarif`,
-`review-status`, and `exit-code`. `review-status` is `blocked`,
+`review-status`, `exit-code`, `context-status`, `evidence-status`,
+`affected-models`, and `missing-evidence`. `review-status` is `blocked`,
 `review-required`, or `clear`. A custom `rules` path must exist in the consumer
-repository. Artifact retention and SARIF upload are workflow responsibilities,
-not Action inputs.
+repository. Artifact retention and SARIF upload are workflow responsibilities.
+
+The scanner is bundled with the Action. It does not install npm packages or
+start MATLAB in the consumer workflow.
+
+### Add test and quality evidence
+
+Generate evidence before the drift step, then declare the files:
+
+```yaml
+- name: Run MATLAB and Simulink tests
+  uses: matlab-actions/run-tests@v3
+  with:
+    test-results-junit: build/test-results.xml
+
+- name: Analyze model drift
+  uses: samueltauil/simulink-model-diff@v0.5.0
+  with:
+    required-evidence: build/test-results.xml
+    evidence: build/model-quality.sarif
+```
 
 ## Optional reusable workflow
 
@@ -105,7 +128,7 @@ permissions:
 
 jobs:
   model-drift:
-    uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.4.2
+    uses: samueltauil/simulink-model-diff/.github/workflows/pr-analysis.yml@v0.5.0
     with:
       include: |
         models/**/*.slx
@@ -131,6 +154,10 @@ The published Action's deterministic outputs are:
 | `sarif` | `<output>/model-drift.sarif` |
 | `review-status` | `blocked`, `review-required`, or `clear` |
 | `exit-code` | Stable analyzer exit code |
+| `context-status` | `complete`, `partial`, `failed`, or `disabled` |
+| `evidence-status` | `clear`, `review-required`, or `blocked` |
+| `affected-models` | Direct and transitive dependent model count |
+| `missing-evidence` | Missing required evidence file count |
 
 The Action writes the aggregate Markdown to `GITHUB_STEP_SUMMARY`. The summary
 and aggregate JSON use the same reviewer priority order as the Copilot canvas.
@@ -206,11 +233,11 @@ trusted refs. See [Runner setup](runner-setup.md).
 
 ## Release pinning
 
-Pin `v0.4.2` for the supported Action contract, or pin the full release commit
+Pin `v0.5.0` for the supported Action contract, or pin the full release commit
 SHA for an immutable supply-chain reference. The optional reusable workflow
 self-references the Action from the same release; do not mix a newer workflow
 contract with an older Action.
 
-The `v0.4.2` tag is also the release boundary for the Python package,
+The `v0.5.0` tag is also the release boundary for the Python package,
 report schemas, action metadata, and workflow contract. Upgrade those surfaces
 together.

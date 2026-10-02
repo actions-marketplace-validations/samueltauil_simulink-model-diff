@@ -21,9 +21,9 @@ result.
 
 | Surface | Purpose |
 | --- | --- |
-| GitHub Action | Discover changed models, generate reports, evaluate policy, and publish a prioritized job summary |
+| GitHub Action | Discover changed models, map affected dependents, combine review evidence, evaluate policy, and publish a prioritized job summary |
 | Report contract | Stable aggregate and per-model JSON, Markdown, SVG, and SARIF |
-| Copilot app canvas | Review trust, scope, before and after evidence, and the merge assessment beside the agent conversation |
+| Copilot app canvas | Review trust, repository impact, tests, quality findings, before and after evidence, and the merge assessment beside the agent conversation |
 
 The Action produces the evidence. The canvas reads the same JSON. Branch
 protection and repository policy remain authoritative.
@@ -58,7 +58,7 @@ jobs:
 
       - name: Analyze model drift
         id: drift
-        uses: samueltauil/simulink-model-diff@v0.4.2
+        uses: samueltauil/simulink-model-diff@v0.5.0
         with:
           fail-on: error
 
@@ -94,6 +94,16 @@ The job summary puts the models in review order:
 
 The Action exposes the aggregate result as `review-status` with one of three
 values: `blocked`, `review-required`, or `clear`.
+
+The aggregate index also records repository relationships and imported
+evidence. The bundled scanner uses MathWorks `data-explorer-core` to find model
+references, dictionaries, and external data sources without starting MATLAB.
+This is structural context only. It does not turn partial semantic extraction
+into a complete result.
+
+Repositories can also provide SARIF quality reports and JUnit test results.
+Errors, failed tests, and missing required evidence block review. Warnings keep
+the result at `review-required`.
 
 The artifact contains:
 
@@ -141,6 +151,9 @@ sequence, and troubleshooting.
 Automatic pull request analysis runs on a GitHub-hosted runner with
 `contents: read`, no secrets, and no persisted checkout credentials. Use
 `pull_request`, never `pull_request_target`, for untrusted changes.
+
+The relationship scanner reads saved package bytes and does not execute model
+callbacks, project startup files, MATLAB code, or repository scripts.
 
 Loading a model in MATLAB or Simulink can execute callbacks, scripts, custom
 code, and referenced dependencies. Licensed extraction belongs in a separate,

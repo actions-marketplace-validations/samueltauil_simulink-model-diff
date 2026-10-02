@@ -28,9 +28,10 @@ This is the shortcut that makes the canvas useful in a pull request review:
 1. Open the canvas from the GitHub Copilot app.
 2. Confirm the extraction status. If it is `partial`, `unsupported`, or
    `failed`, the review stops there.
-3. Check the model queue to see which blocks changed.
-4. Inspect the evidence map for before/after values and the categories that
-   changed.
+3. Check the model queue and repository impact section for changed and affected
+   models.
+4. Inspect imported tests and quality findings, then compare the recorded
+   before and after values.
 5. Use the decision card to confirm whether the change is ready for human
    review or needs a stronger extraction first.
 
@@ -167,11 +168,13 @@ cannot support a clean approval, and the canvas says so rather than rendering
 the change as settled.
 
 **Scope.** The model queue lists every changed model in the pull request. The
-impact map draws only the blocks and connections the report explicitly records.
-It does not infer a signal route from block ordering, so an empty area means the
-report did not describe that part of the model.
+repository impact section lists direct and transitive dependents, unresolved
+references, and relationship cycles from the structural scan. The model impact
+map still draws only blocks and connections explicitly recorded by semantic
+evidence.
 
-**Evidence.** The ledger pairs before and after values for each recorded change.
+**Evidence.** Imported SARIF findings and JUnit results appear before the drift
+ledger. The ledger pairs before and after values for each recorded change.
 Filters narrow it by functional, interface, or structural category, and path
 focus limits it to one model path. Fields the report never populated are hidden
 instead of being rendered as `unknown`.

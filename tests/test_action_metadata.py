@@ -34,20 +34,33 @@ def test_canonical_consumer_invokes_published_action_from_steps() -> None:
     assert "/.github/workflows/" not in action["uses"]
 
 
-def test_action_and_reusable_workflow_expose_review_status() -> None:
+def test_action_and_reusable_workflow_expose_review_contract() -> None:
     action = yaml.safe_load((ROOT / "action.yml").read_text(encoding="utf-8"))
-    assert action["outputs"]["review-status"]["value"] == (
-        "${{ steps.pr.outputs['review-status'] }}"
-    )
+    action_outputs = action["outputs"]
+    for output in (
+        "review-status",
+        "context-status",
+        "evidence-status",
+        "affected-models",
+        "missing-evidence",
+    ):
+        assert action_outputs[output]["value"] == f"${{{{ steps.pr.outputs['{output}'] }}}}"
 
     workflow = yaml.safe_load(
         (ROOT / ".github" / "workflows" / "pr-analysis.yml").read_text(
             encoding="utf-8"
         )
     )
-    assert workflow[True]["workflow_call"]["outputs"]["review-status"]["value"] == (
-        "${{ jobs.analyze.outputs['review-status'] }}"
-    )
-    assert workflow["jobs"]["analyze"]["outputs"]["review-status"] == (
-        "${{ steps.drift.outputs['review-status'] }}"
-    )
+    workflow_outputs = workflow[True]["workflow_call"]["outputs"]
+    job_outputs = workflow["jobs"]["analyze"]["outputs"]
+    for output in (
+        "review-status",
+        "context-status",
+        "evidence-status",
+        "affected-models",
+        "missing-evidence",
+    ):
+        assert workflow_outputs[output]["value"] == (
+            f"${{{{ jobs.analyze.outputs['{output}'] }}}}"
+        )
+        assert job_outputs[output] == f"${{{{ steps.drift.outputs['{output}'] }}}}"

@@ -17,6 +17,19 @@ from typing import Any
 from model_drift import __version__
 from model_drift.canonicalize import canonicalize_manifest
 from model_drift.compare import compare_manifests
+from model_drift.context import (
+    ContextScanError,
+    build_repository_context,
+    failed_context,
+    model_impact,
+    run_context_scanner,
+)
+from model_drift.evidence import (
+    build_external_sarif_runs,
+    collect_external_evidence,
+    empty_external_evidence,
+    evidence_for_model,
+)
 from model_drift.extract import ExternalCommandExtractor
 from model_drift.reporters import build_sarif, render_markdown, render_sarif, render_svg
 from model_drift.review import build_model_review, build_review_plan
@@ -61,6 +74,9 @@ class PullRequestOptions:
     extractor_command: tuple[str, ...]
     timeout_seconds: float
     fail_on: str
+    context_scan: str = "advisory"
+    evidence: tuple[Path, ...] = ()
+    required_evidence: tuple[Path, ...] = ()
 
 
 def analyze_pull_request(options: PullRequestOptions) -> int:
@@ -81,8 +97,29 @@ def analyze_pull_request(options: PullRequestOptions) -> int:
     all_findings: list[Finding] = []
     exit_codes: list[int] = []
     failures: list[dict[str, str]] = []
+    repository_context: dict[str, Any] = _disabled_context()
     with tempfile.TemporaryDirectory(prefix="simulink-model-drift-pr-") as directory:
         temporary_root = Path(directory)
+        if options.context_scan != "off":
+            try:
+                base_snapshot = _git_snapshot(
+                    repository, temporary_root / "context-base", base_commit
+                )
+                head_snapshot = _git_snapshot(
+                    repository, temporary_root / "context-head", head_commit
+                )
+                repository_context = build_repository_context(
+                    run_context_scanner(base_snapshot),
+                    run_context_scanner(head_snapshot),
+                    [
+                        path
+                        for model in models
+                        for path in (model.base_path, model.head_path)
+                        if path
+                    ],
+                )
+            except ContextScanError as exc:
+                repository_context = failed_context(str(exc))
         for model in models:
             try:
                 record, findings, exit_code = _analyze_model(
@@ -119,6 +156,23 @@ def analyze_pull_request(options: PullRequestOptions) -> int:
                 exit_codes.append(exc.exit_code)
 
     records.sort(key=lambda item: (str(item.get("headPath") or item.get("basePath")), item["id"]))
+    try:
+        external_evidence = (
+            collect_external_evidence(
+                repository,
+                options.evidence,
+                options.required_evidence,
+                records,
+            )
+            if options.evidence or options.required_evidence
+            else empty_external_evidence()
+        )
+    except ValueError as exc:
+        raise PullRequestAnalysisError(
+            str(exc),
+            "PR_EVIDENCE_PATH_UNSAFE",
+            2,
+        ) from exc
     all_findings.sort(
         key=lambda item: (
             item.rule_id,
@@ -135,10 +189,13 @@ def analyze_pull_request(options: PullRequestOptions) -> int:
         records,
         all_findings,
         failures,
+        repository_context,
+        external_evidence,
     )
     _write_text(output / "model-drift-index.json", canonical_json_text(index))
     _write_text(output / "model-drift-summary.md", _aggregate_markdown(index))
     aggregate_sarif = build_sarif(all_findings, rules, tool_version=__version__)
+    aggregate_sarif["runs"].extend(build_external_sarif_runs(external_evidence))
     if failures:
         aggregate_sarif["runs"][0]["invocations"] = [
             {
@@ -155,6 +212,10 @@ def analyze_pull_request(options: PullRequestOptions) -> int:
             }
         ]
     _write_text(output / "model-drift.sarif", _pretty_json(aggregate_sarif))
+    if options.context_scan == "required" and repository_context["status"] != "complete":
+        exit_codes.append(5)
+    if external_evidence["status"] == "blocked":
+        exit_codes.append(3)
     return max(exit_codes, key=lambda code: _EXIT_PRIORITY[code]) if exit_codes else 0
 
 
@@ -554,10 +615,19 @@ def _build_index(
     records: Sequence[Mapping[str, Any]],
     findings: Sequence[Finding],
     failures: Sequence[Mapping[str, str]],
+    repository_context: Mapping[str, Any],
+    external_evidence: Mapping[str, Any],
 ) -> dict[str, Any]:
     prepared_records = []
     for source in records:
         record = dict(source)
+        path = str(record.get("headPath") or record.get("basePath") or "")
+        record["impact"] = model_impact(repository_context, path)
+        record["externalEvidence"] = evidence_for_model(
+            external_evidence, str(record.get("id", ""))
+        )
+        record["contextStatus"] = repository_context.get("status", "disabled")
+        record["contextRequired"] = options.context_scan == "required"
         record["review"] = build_model_review(record)
         prepared_records.append(record)
 
@@ -574,9 +644,23 @@ def _build_index(
         else "complete"
     )
     review_plan = build_review_plan(prepared_records)
+    global_reasons = []
+    if options.context_scan == "required" and repository_context.get("status") != "complete":
+        global_reasons.append("repository-context-failed")
+    if external_evidence.get("status") == "blocked":
+        global_reasons.append("external-evidence-blocked")
+    if global_reasons:
+        review_plan["status"] = "blocked"
+        review_plan["recommendedAction"] = (
+            "Resolve repository context and external evidence blockers before approval."
+        )
+        review_plan["globalReasons"] = global_reasons
     return {
-        "$schema": "https://github.com/github/simulink-model-drift/model-drift-index/0.1.0",
-        "schemaVersion": "0.1.0",
+        "$schema": (
+            "https://github.com/samueltauil/simulink-model-diff/"
+            "model-drift-index/0.2.0"
+        ),
+        "schemaVersion": "0.2.0",
         "baseRef": options.base_ref,
         "headRef": options.head_ref,
         "baseCommit": base_commit,
@@ -598,9 +682,14 @@ def _build_index(
                 record.get("policyStatus") == "failed" for record in prepared_records
             ),
             "findings": dict(sorted(Counter(item.level for item in findings).items())),
+            "affectedModels": len(repository_context.get("directlyAffectedModels", ()))
+            + len(repository_context.get("transitivelyAffectedModels", ())),
+            "externalEvidence": external_evidence.get("summary", {}),
             "drift": dict(sorted(drift_totals.items())),
         },
         "reviewPlan": review_plan,
+        "repositoryContext": dict(repository_context),
+        "externalEvidence": dict(external_evidence),
         "models": prepared_records,
         "failures": list(sorted(failures, key=lambda item: item["path"])),
     }
@@ -609,6 +698,9 @@ def _build_index(
 def _aggregate_markdown(index: Mapping[str, Any]) -> str:
     summary = index["summary"]
     models = index["models"]
+    evidence_status = str(
+        index.get("externalEvidence", {}).get("status", "clear")
+    ).replace("-", " ").title()
     lines = [
         "## Simulink Model Drift",
         "",
@@ -616,13 +708,28 @@ def _aggregate_markdown(index: Mapping[str, Any]) -> str:
         f"**Analysis:** {str(index['status']).title()}  ",
         f"**Review status:** {str(index['reviewPlan']['status']).replace('-', ' ').title()}  ",
         f"**Changed models:** {summary['changedModels']}  ",
+        f"**Affected dependents:** {summary.get('affectedModels', 0)}  ",
+        f"**External evidence:** {evidence_status}  ",
         f"**Next step:** {index['reviewPlan']['recommendedAction']}",
         "",
     ]
     if not models:
+        context = index.get("repositoryContext", {})
+        evidence = index.get("externalEvidence", {})
+        evidence_summary = evidence.get("summary", {})
         lines.extend(
             [
                 "No changed Simulink model files matched the configured include globs.",
+                "",
+                "### Repository impact",
+                "",
+                f"- Context status: **{str(context.get('status', 'disabled')).title()}**",
+                f"- Unresolved references: {len(context.get('unresolvedReferences', ()))}",
+                "",
+                "### External evidence",
+                "",
+                f"- Status: **{str(evidence.get('status', 'clear')).replace('-', ' ').title()}**",
+                f"- Missing required evidence: {evidence_summary.get('missingRequired', 0)}",
                 "",
             ]
         )
@@ -674,6 +781,32 @@ def _aggregate_markdown(index: Mapping[str, Any]) -> str:
             f"| {drift.get('modified', 0)} | {drift.get('interfaceChanges', 0)} |"
         )
     lines.append("")
+    context = index.get("repositoryContext", {})
+    lines.extend(
+        [
+            "### Repository impact",
+            "",
+            f"- Context status: **{str(context.get('status', 'disabled')).title()}**",
+            f"- Directly affected models: {len(context.get('directlyAffectedModels', ()))}",
+            f"- Transitively affected models: {len(context.get('transitivelyAffectedModels', ()))}",
+            f"- Unresolved references: {len(context.get('unresolvedReferences', ()))}",
+            "",
+        ]
+    )
+    evidence = index.get("externalEvidence", {})
+    evidence_summary = evidence.get("summary", {})
+    lines.extend(
+        [
+            "### External evidence",
+            "",
+            f"- Status: **{str(evidence.get('status', 'clear')).replace('-', ' ').title()}**",
+            f"- Sources: {len(evidence.get('sources', ()))}",
+            f"- Findings: {sum(evidence_summary.get('findings', {}).values())}",
+            f"- Tests: {sum(evidence_summary.get('tests', {}).values())}",
+            f"- Missing required evidence: {evidence_summary.get('missingRequired', 0)}",
+            "",
+        ]
+    )
     failures = index.get("failures", ())
     if failures:
         lines.extend(["### Analysis failures", ""])
@@ -682,6 +815,42 @@ def _aggregate_markdown(index: Mapping[str, Any]) -> str:
         )
         lines.append("")
     return "\n".join(lines)
+
+
+def _git_snapshot(repository: Path, root: Path, commit: str) -> Path:
+    root.mkdir(parents=True, exist_ok=True)
+    names = _git(repository, "ls-tree", "-r", "-z", "--name-only", commit, binary=True)
+    for raw in names.split(b"\0"):
+        if not raw:
+            continue
+        path = _git_path(raw)
+        if PurePosixPath(path).suffix.lower() not in {".slx", ".mdl", ".sldd", ".mat"}:
+            continue
+        destination = (root / Path(*PurePosixPath(path).parts)).resolve()
+        if root.resolve() not in destination.parents:
+            raise ContextScanError(f"snapshot path escaped repository root: {path}")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(_git(repository, "show", f"{commit}:{path}", binary=True))
+    return root
+
+
+def _disabled_context() -> dict[str, Any]:
+    return {
+        "status": "disabled",
+        "trust": "structural-non-semantic",
+        "scanner": {},
+        "changedPaths": [],
+        "directlyAffectedModels": [],
+        "transitivelyAffectedModels": [],
+        "impactByChangedPath": {},
+        "nodes": [],
+        "edges": [],
+        "cycles": [],
+        "unresolvedReferences": [],
+        "baseSummary": {},
+        "headSummary": {},
+        "errors": [],
+    }
 
 
 def _policy_failed(findings: Sequence[Finding], threshold: str) -> bool:

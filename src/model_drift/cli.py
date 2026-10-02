@@ -92,13 +92,13 @@ def _parser() -> argparse.ArgumentParser:
     doctor.add_argument("--json", action="store_true", dest="as_json")
 
     schema = commands.add_parser("schema", help="print the path to a packaged JSON Schema")
-    schema.add_argument("contract", choices=("canonical", "drift"))
+    schema.add_argument("contract", choices=("canonical", "drift", "index"))
 
     fingerprint = commands.add_parser("fingerprint", help="fingerprint a JSON document")
     fingerprint.add_argument("document", type=Path)
 
     validate = commands.add_parser("validate", help="validate a JSON contract")
-    validate.add_argument("contract", choices=("canonical", "drift"))
+    validate.add_argument("contract", choices=("canonical", "drift", "index"))
     validate.add_argument("document", type=Path)
 
     compare = commands.add_parser(
@@ -164,6 +164,26 @@ def _parser() -> argparse.ArgumentParser:
         choices=("none", "warning", "error"),
         default=None,
         help="return a policy failure exit code at or above this level",
+    )
+    pr.add_argument(
+        "--context-scan",
+        choices=("off", "advisory", "required"),
+        default="advisory",
+        help="scan repository model relationships without executing MATLAB",
+    )
+    pr.add_argument(
+        "--evidence",
+        type=Path,
+        action="append",
+        default=[],
+        help="optional SARIF or JUnit evidence file; repeatable",
+    )
+    pr.add_argument(
+        "--required-evidence",
+        type=Path,
+        action="append",
+        default=[],
+        help="required SARIF or JUnit evidence file; missing or invalid files block review",
     )
 
     inspect = commands.add_parser(
@@ -479,6 +499,9 @@ def _pr(args: argparse.Namespace) -> int:
             extractor_command=command,
             timeout_seconds=config.extractor.timeout_seconds,
             fail_on=args.fail_on or config.policy.fail_on,
+            context_scan=args.context_scan,
+            evidence=tuple(args.evidence),
+            required_evidence=tuple(args.required_evidence),
         )
     )
 
@@ -563,6 +586,7 @@ def _schema_filename(contract: str) -> str:
     return {
         "canonical": "canonical-model.schema.json",
         "drift": "drift-manifest.schema.json",
+        "index": "model-drift-index.schema.json",
     }[contract]
 
 

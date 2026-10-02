@@ -130,6 +130,14 @@ function driftModel(id, label, drift, record = {}) {
             reasons: Array.isArray(planned.reasons) ? planned.reasons.map(String) : [],
             detail: String(planned.action || assessed.detail),
         },
+        impact:
+            record.impact && typeof record.impact === "object"
+                ? record.impact
+                : { directDependents: [], transitiveDependents: [], unresolvedReferences: [] },
+        externalEvidence:
+            record.externalEvidence && typeof record.externalEvidence === "object"
+                ? record.externalEvidence
+                : { findings: [], tests: [], summary: { findings: {}, tests: {} } },
         topology: {
             blocks: Array.isArray(topology.blocks)
                 ? topology.blocks.map((block) => ({
@@ -177,7 +185,22 @@ async function loadReport(workingDirectory, reportPath) {
                 }
             }
             const label = record.headPath || record.basePath || record.id || "model";
-            models.push(driftModel(String(record.id || label), String(label), drift, record));
+            const cycles = Array.isArray(document.repositoryContext?.cycles)
+                ? document.repositoryContext.cycles.filter(
+                      (cycle) => Array.isArray(cycle) && cycle.includes(label),
+                  )
+                : [];
+            models.push(
+                driftModel(String(record.id || label), String(label), drift, {
+                    ...record,
+                    impact: {
+                        ...(record.impact && typeof record.impact === "object"
+                            ? record.impact
+                            : {}),
+                        cycles,
+                    },
+                }),
+            );
         }
         return {
             source,
@@ -187,6 +210,8 @@ async function loadReport(workingDirectory, reportPath) {
             headRef: document.headRef || document.headCommit || null,
             summary: document.summary || {},
             reviewPlan: document.reviewPlan || null,
+            repositoryContext: document.repositoryContext || null,
+            externalEvidence: document.externalEvidence || null,
             models,
         };
     }
@@ -323,6 +348,7 @@ main{display:grid;grid-template-columns:clamp(210px,18vw,280px) minmax(0,1fr);mi
 .ledger{border-top:1px solid var(--line);overflow:hidden;background:var(--surface)}.change{display:grid;grid-template-columns:88px minmax(180px,.75fr) minmax(0,1.6fr);border-bottom:1px solid var(--line)}.change:hover{background:#f5f5ef}.change.hidden{display:none}.change-code{padding:16px 12px;border-right:1px solid var(--line);font:800 8px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.11em;color:var(--muted)}.change-code i{display:block;width:11px;height:11px;margin-bottom:10px;background:var(--accent)}.change.added .change-code i{background:var(--olive)}.change.removed .change-code i{background:var(--rose)}.change.modified .change-code i{background:var(--amber)}.change.moved .change-code i{background:#786ad9}
 .change-identity{padding:15px 16px;border-right:1px solid var(--line)}.change-identity code{font:700 12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}.change-identity .meta{margin-top:8px;color:var(--muted);font:9px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.08em}
 .evidence-line{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);color:var(--muted);font-size:10px}.evidence-line b{color:var(--text)}
+.context-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}.context-card{border:1px solid var(--line);background:var(--surface);padding:14px}.context-card b{display:block;font:800 8px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}.context-card ul{margin:0;padding-left:17px}.context-card li{margin:5px 0;overflow-wrap:anywhere}.evidence-item{border-left:4px solid var(--accent);padding:10px 12px;background:var(--surface);margin-top:8px}.evidence-item.error,.evidence-item.failed{border-color:var(--rose)}.evidence-item.warning{border-color:var(--amber)}.evidence-item code{font-size:10px}.evidence-item p{margin:5px 0 0;color:var(--muted);font-size:11px}
 .values{display:grid;grid-template-columns:1fr 1fr}.value{padding:15px 17px;min-width:0}.value + .value{border-left:1px solid var(--line)}.value label{display:block;font:800 8px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}.value pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0 0;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--text)}.before{background:rgba(255,117,133,.04)}.after{background:rgba(90,200,193,.06)}
 .decision h2{color:#111820;font-size:20px;letter-spacing:-.03em;margin:0 0 12px}.decision-state{border-top:6px solid var(--accent);background:#fffefa;color:#111820;padding:18px;margin-bottom:18px;box-shadow:0 6px 22px var(--shadow)}.decision-state.warn{border-color:var(--amber)}.decision-state.stop{border-color:var(--rose)}.decision-state strong{display:block;color:#111820;font-size:21px;line-height:1.1;margin-bottom:9px}.decision-state p{margin:0;color:#46515d;font-size:12px}.review-facts{border-top:1px solid #a8a8a1}.fact{display:grid;grid-template-columns:1fr auto;gap:12px;padding:11px 0;border-bottom:1px solid #b8b8b1;font-size:12px}.fact span{color:#4e5963}.fact b{color:#111820;text-align:right}.review-note{margin-top:18px;padding:13px;background:#cacbc3;color:#26313a;font-size:11px;line-height:1.5}.review-note b{display:block;color:#111820;margin-bottom:5px;font:800 8px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.12em;text-transform:uppercase}
 .empty,.error{padding:26px;border:1px solid var(--line);background:var(--surface);font:12px ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--muted)}.error{border-left:8px solid var(--rose);color:var(--text)}
@@ -356,10 +382,10 @@ function render(){
  status.textContent=state.error?"error":known(state.report?.status)?state.report.status:"loaded";
  if(state.error){models.innerHTML="";content.innerHTML='<div class="error"><strong>Report unavailable</strong><br>'+esc(state.error)+'</div>';return}
  const list=state.report?.models||[]; document.getElementById("model-count").textContent=String(list.length).padStart(2,"0"); if(!selected||!list.some(m=>m.id===selected))selected=state.selectedModelId||list[0]?.id;
- models.innerHTML=list.map((m,i)=>{const facts=[known(m.review?.priority)?m.review.priority:null,m.changeType,known(m.analysisStatus)?m.analysisStatus:null].filter(Boolean);return '<button class="model '+(m.id===selected?"active":"")+'" data-id="'+esc(m.id)+'" data-number="'+String(i+1).padStart(2,"0")+'"><span>'+esc(m.label)+(facts.length?'<small>'+facts.map(esc).join(" / ")+'</small>':'')+'</span></button>'}).join("");
+ models.innerHTML=list.map((m,i)=>{const dependentCount=(m.impact?.directDependents?.length||0)+(m.impact?.transitiveDependents?.length||0);const facts=[known(m.review?.priority)?m.review.priority:null,m.changeType,known(m.analysisStatus)?m.analysisStatus:null,dependentCount?dependentCount+" dependents":null].filter(Boolean);return '<button class="model '+(m.id===selected?"active":"")+'" data-id="'+esc(m.id)+'" data-number="'+String(i+1).padStart(2,"0")+'"><span>'+esc(m.label)+(facts.length?'<small>'+facts.map(esc).join(" / ")+'</small>':'')+'</span></button>'}).join("");
  models.querySelectorAll("button").forEach(b=>b.onclick=()=>choose(b.dataset.id));
  const m=list.find(x=>x.id===selected); if(!m){content.innerHTML='<div class="empty">No changed models were found.</div>';return}
- const s=m.summary||{}, changes=m.changes||[], topology=m.topology||{};
+ const s=m.summary||{}, changes=m.changes||[], topology=m.topology||{}, impact=m.impact||{}, external=m.externalEvidence||{};
  const decision=m.review;
  const changedPaths=new Set(changes.map(c=>c.path));
  const nodes=(topology.blocks||[]).slice(0,14);
@@ -369,21 +395,30 @@ function render(){
  const rawMetrics=[["Added",count(s,"added")],["Removed",count(s,"removed")],["Modified",count(s,"modified")],["Moved",count(s,"moved")],["Interfaces",count(s,"interfaceChanges")]];
  const metrics=[["Revisions",changes.length],...rawMetrics.filter(x=>x[1]>0)];
  const route=known(m.basePath)&&known(m.headPath)?'<div class="route"><span>'+esc(m.basePath)+'</span><b></b><span>'+esc(m.headPath)+'</span></div>':(known(m.headPath)||known(m.basePath)?'<div class="route" style="display:block"><span>'+esc(m.headPath||m.basePath)+'</span></div>':'');
- const topologySection=nodes.length?'<div class="sheet-label"><em>01</em> model inventory / '+nodes.length+' blocks'+(connections.length?' / '+connections.length+' connections':'')+'</div><section class="schematic"><div class="system-map"><div class="topology">'+nodeMarkup+'</div>'+(connections.length?'<div class="edge-register"><h3>Recorded connections</h3>'+edgeMarkup+'</div>':'')+'</div></section>':'';
- const ledgerNumber=nodes.length?"02":"01";
  const visible=changes.filter(filterChange);
  const extractor=[...new Set(changes.map(c=>c.evidence?.extractor).filter(known))].join(", ");
- const affected=new Set(changes.map(c=>c.path)).size;
+ const semanticPaths=new Set(changes.map(c=>c.path)).size;
+ const dependentCount=(impact.directDependents?.length||0)+(impact.transitiveDependents?.length||0);
+ const affected=semanticPaths+dependentCount;
  const filters=[["all","All drift"],["functional","Functional"],["interface","Interfaces"],["structural","Structural"]];
  const phaseTrust=String(m.analysisStatus).toLowerCase()==="complete"?"pass":decision.tone;
- const phases='<div class="phasebar"><div class="phase '+phaseTrust+'"><b>01 / Trust</b>'+esc(known(m.analysisStatus)?m.analysisStatus:"not reported")+'</div><div class="phase"><b>02 / Scope</b>'+affected+' affected path'+(affected===1?"":"s")+'</div><div class="phase"><b>03 / Evidence</b>'+changes.length+' revision'+(changes.length===1?"":"s")+'</div><div class="phase '+decision.tone+'"><b>04 / Decision</b>'+esc(decision.title)+'</div></div>';
+ const externalCount=(external.findings?.length||0)+(external.tests?.length||0);
+ const phases='<div class="phasebar"><div class="phase '+phaseTrust+'"><b>01 / Trust</b>'+esc(known(m.analysisStatus)?m.analysisStatus:"not reported")+'</div><div class="phase"><b>02 / Scope</b>'+affected+' affected path'+(affected===1?"":"s")+'</div><div class="phase"><b>03 / Evidence</b>'+changes.length+' revisions / '+externalCount+' external</div><div class="phase '+decision.tone+'"><b>04 / Decision</b>'+esc(decision.title)+'</div></div>';
+ const impactItems=[["Direct dependents",impact.directDependents||[]],["Transitive dependents",impact.transitiveDependents||[]],["Unresolved references",(impact.unresolvedReferences||[]).map(item=>item.requestedTarget||item.target)],["Reference cycles",(impact.cycles||[]).map(cycle=>Array.isArray(cycle)?cycle.join(" -> "):cycle)]];
+ const imported=[...(external.findings||[]).map(item=>({tone:item.level,label:(item.tool||"Quality")+" / "+(item.ruleId||"finding"),detail:item.message||"",source:item.artifactUri||item.source||""})),...(external.tests||[]).map(item=>({tone:item.status,label:(item.tool||"Tests")+" / "+(item.name||"test"),detail:item.message||item.suite||"",source:item.file||item.classname||""}))];
+ let sectionNumber=1;
+ const nextSection=()=>String(sectionNumber++).padStart(2,"0");
+ const topologySection=nodes.length?'<div class="sheet-label"><em>'+nextSection()+'</em> model inventory / '+nodes.length+' blocks'+(connections.length?' / '+connections.length+' connections':'')+'</div><section class="schematic"><div class="system-map"><div class="topology">'+nodeMarkup+'</div>'+(connections.length?'<div class="edge-register"><h3>Recorded connections</h3>'+edgeMarkup+'</div>':'')+'</div></section>':'';
+ const impactSection=impactItems.some(item=>item[1].length)?'<div class="sheet-label"><em>'+nextSection()+'</em> repository impact / structural context</div><div class="context-grid">'+impactItems.map(item=>'<div class="context-card"><b>'+esc(item[0])+' / '+item[1].length+'</b>'+(item[1].length?'<ul>'+item[1].map(value=>'<li><code>'+esc(value)+'</code></li>').join("")+'</ul>':'<span>None</span>')+'</div>').join("")+'</div>':'';
+ const externalSection=imported.length?'<div class="sheet-label"><em>'+nextSection()+'</em> external evidence / '+imported.length+' records</div>'+imported.map(item=>'<div class="evidence-item '+esc(item.tone)+'"><code>'+esc(item.label)+(item.source?' / '+esc(item.source):'')+'</code><p>'+esc(item.detail||item.tone)+'</p></div>').join(""):'';
+ const ledgerNumber=nextSection();
  const filterbar=changes.length?'<div class="filterbar">'+filters.map(f=>'<button class="filter '+(changeFilter===f[0]&&!pathFilter?"active":"")+'" data-filter="'+f[0]+'">'+f[1]+'</button>').join("")+(pathFilter?'<button class="filter active clear-focus" data-clear-focus>Focused path ×</button>':'')+'</div>':'';
  const ledger=visible.length?'<div class="ledger">'+visible.map((c,i)=>{const facts=[c.category,c.elementType,c.property,known(c.classification)?c.classification:null].filter(Boolean);const detail=c.evidence?.details&&typeof c.evidence.details==="object"?Object.entries(c.evidence.details).map(([k,v])=>esc(k)+": "+esc(v)).join(" · "):"";return '<article class="change '+esc(c.kind)+'"><div class="change-code"><i></i>'+String(i+1).padStart(2,"0")+' / '+esc(c.kind)+'</div><div class="change-identity"><code>'+esc(c.path)+'</code>'+(facts.length?'<div class="meta">'+facts.map(esc).join(" / ")+'</div>':'')+(detail?'<div class="evidence-line"><b>Evidence</b> '+detail+'</div>':'')+'</div><div class="values"><div class="value before"><label>Previous state</label><pre>'+esc(pretty(c.before,c.kind,"before"))+'</pre></div><div class="value after"><label>Revised state</label><pre>'+esc(pretty(c.after,c.kind,"after"))+'</pre></div></div></article>'}).join("")+'</div>':(changes.length?'<div class="empty">No revisions match the current focus.</div>':'<div class="empty">No revisions are recorded for this model.</div>');
- const decisionFacts=[...(known(m.review?.priority)?[["Review priority",m.review.priority]]:[]),["Analysis",known(m.analysisStatus)?m.analysisStatus:"not reported"],...(known(m.policyStatus)?[["Policy",m.policyStatus]]:[]),["Affected paths",affected],["Topology",nodes.length?nodes.length+" blocks":"not supplied"],...(extractor?[["Evidence source",extractor]]:[])];
+ const decisionFacts=[...(known(m.review?.priority)?[["Review priority",m.review.priority]]:[]),["Analysis",known(m.analysisStatus)?m.analysisStatus:"not reported"],...(known(m.policyStatus)?[["Policy",m.policyStatus]]:[]),["Affected paths",affected],["Dependent models",dependentCount],["External records",externalCount],["Topology",nodes.length?nodes.length+" blocks":"not supplied"],...(extractor?[["Evidence source",extractor]]:[])];
  const decisionPanel='<section class="decision-rail"><div class="decision"><h2>Merge assessment</h2><div class="decision-state '+decision.tone+'"><strong>'+esc(decision.title)+'</strong><p>'+esc(decision.detail)+'</p></div><div class="review-facts">'+decisionFacts.map(f=>'<div class="fact"><span>'+esc(f[0])+'</span><b>'+esc(f[1])+'</b></div>').join("")+'</div><div class="review-note"><b>Workflow position</b>Use this review after CI creates the drift artifact and before approving the pull request. The canvas presents evidence; repository policy remains authoritative.</div></div></section>';
  content.innerHTML=phases+'<div class="workspace"><div class="review-main"><section class="folio"><div class="kicker">Model change under review'+(known(m.changeType)?' / '+esc(m.changeType):'')+'</div><h1>'+esc(m.label)+'</h1>'+route+'</section>'+
  '<div class="tape" style="grid-template-columns:repeat('+metrics.length+',minmax(0,1fr))">'+metrics.map(x=>'<div class="metric"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>').join("")+'</div>'+
- topologySection+'<div class="sheet-label"><em>'+ledgerNumber+'</em> inspect evidence / '+visible.length+' of '+changes.length+' shown</div>'+filterbar+ledger+'</div>'+decisionPanel+'</div>';
+ topologySection+impactSection+externalSection+'<div class="sheet-label"><em>'+ledgerNumber+'</em> inspect drift / '+visible.length+' of '+changes.length+' shown</div>'+filterbar+ledger+'</div>'+decisionPanel+'</div>';
  content.querySelectorAll("[data-filter]").forEach(button=>button.onclick=()=>setFilter(button.dataset.filter));
  content.querySelectorAll("[data-path]").forEach(button=>button.onclick=()=>focusPath(button.dataset.path));
  const clear=content.querySelector("[data-clear-focus]");if(clear)clear.onclick=()=>{pathFilter=null;render()};

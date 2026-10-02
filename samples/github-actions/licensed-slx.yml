@@ -31,7 +31,7 @@ jobs:
           persist-credentials: false
 
       - name: Analyze with the reviewed licensed extractor
-        uses: samueltauil/simulink-model-diff@v0.4.2
+        uses: samueltauil/simulink-model-diff@v0.5.0
         with:
           base-ref: ${{ inputs['base-ref'] }}
           head-ref: ${{ inputs['head-ref'] }}

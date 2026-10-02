@@ -1,0 +1,17 @@
+{
+  "name": "simulink-model-drift-context-scanner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "build": "esbuild scanner.mjs --bundle --platform=node --format=esm --target=node20 --outfile=../../src/model_drift/context_scanner/scanner.mjs",
+    "test": "node scanner.mjs --help"
+  },
+  "dependencies": {
+    "data-explorer-core": "github:mathworks/data-explorer-core#v1.32.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10"
+  }
+}

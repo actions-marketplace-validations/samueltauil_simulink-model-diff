@@ -2,7 +2,19 @@
 
 All notable user-visible changes are documented here. The project follows Semantic Versioning once public compatibility commitments are made; pre-1.0 releases may refine contracts with clear release notes.
 
-## Unreleased
+## 0.5.0 - 2026-10-01
+
+### Added
+
+- A bundled, MATLAB-free repository relationship scanner based on MathWorks
+  `data-explorer-core`, with direct and transitive impact, unresolved
+  references, and cycle detection.
+- SARIF and JUnit evidence federation with fail-closed required evidence.
+- Aggregate index schema `0.2.0` with repository context, external evidence,
+  and per-model impact records.
+- Action outputs for context status, evidence status, affected models, and
+  missing required evidence.
+- Copilot canvas sections for affected dependents, tests, and quality findings.
 
 ## 0.4.2 - 2026-10-01
 

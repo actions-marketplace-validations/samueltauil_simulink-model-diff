@@ -4,6 +4,12 @@
 
 The projects solve related problems at different layers.
 
+MathWorks also publishes
+[`data-explorer-core`](https://github.com/mathworks/data-explorer-core), a
+BSD-licensed parser for model and data relationships without MATLAB. Simulink
+Model Drift uses that public package for repository scope and impact. The
+result remains structural context, not qualified semantic comparison.
+
 The
 [MathWorks example](https://github.com/mathworks/Simulink-Model-Comparison-for-GitHub-Pull-Requests)
 opens changed `.slx` models with the licensed Simulink Comparison Tool and
@@ -31,6 +37,8 @@ or one runner topology.
 | Policy | No separate policy contract in the example | Repository rules, stable findings, failure thresholds, and SARIF |
 | Incomplete evidence | Depends on MATLAB execution and report generation | `complete`, `partial`, `unsupported`, and `failed` remain explicit and fail closed |
 | Review UI | Portable HTML report | GitHub Actions summary plus an interactive GitHub Copilot app canvas |
+| Repository impact | Modified files and ancestors selected for comparison | Direct and transitive dependents, dictionaries, external data sources, unresolved references, and cycles |
+| External evidence | Runs project tests in the example workflow | Imports SARIF quality findings and JUnit test results into one review plan |
 | Permissions | Workflow owns its runner and artifact upload | The Action requests no permissions; artifact and SARIF upload remain caller controlled |
 
 The comparison above is based on revision
