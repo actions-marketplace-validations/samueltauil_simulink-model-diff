@@ -50,9 +50,10 @@ at a review workflow designed around trust, scope, evidence, and decision.
   </a>
 </p>
 
-The 37-second preview follows the workflow from GitHub to the Copilot app. It
+The 32-second preview follows the workflow from GitHub to the Copilot app. It
 shows the Action configuration, the pull request changing the cardiac dose
-from `60` to `65`, the real Action job, and the resulting canvas review.
+from `60` to `65`, the real Action job, the artifact handoff, and the resulting
+canvas review.
 
 Select the preview to open the
 [full-quality recording](assets/copilot-canvas-demo.mp4).
@@ -63,6 +64,7 @@ Select the preview to open the
 | Configure | A workflow using `samueltauil/simulink-model-diff@v0.5.0` and uploading `build/model-drift` |
 | Pull request | The cardiac model parameter changes from `60` to `65` |
 | Action result | Analysis is blocked, but the report upload step still completes |
+| Handoff | The report artifact is downloaded and opened with the canvas prompt |
 | Copilot review | The PR artifact opens beside the agent conversation with the same `60` to `65` evidence |
 | Decision | Partial evidence requires a qualified extraction before merge |
 
